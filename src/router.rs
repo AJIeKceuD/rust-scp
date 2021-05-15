@@ -2,10 +2,11 @@ use std::{thread, time};
 use std::sync::Arc;
 use hyper::{Body, Request, Response, Method, StatusCode};
 use futures::TryStreamExt as _; // map_ok()
-use crate::ServerContext;
 
 #[path="./controllers/test.rs"]
 mod test_controller;
+use test_controller::TestController;
+use crate::ServerContext;
 
 pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContext>) -> Result<Response<Body>, hyper::Error> {
     // Ok(Response::new("Hello, World".into()))
@@ -22,7 +23,8 @@ pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContex
             // Await the full body to be concatenated into a single `Bytes`...
             // let full_body = hyper::body::to_bytes(req.into_body()).await?;
 
-            response = test_controller::default(req, server_context)?;
+            TestController::new();
+            response = TestController::default(req, server_context)?;
         },
 
 

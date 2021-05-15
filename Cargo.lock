@@ -964,6 +964,8 @@ dependencies = [
  "sqlx",
  "tokio",
  "tokio-postgres",
+ "web_controller",
+ "web_controller_derive",
 ]
 
 [[package]]
@@ -1560,6 +1562,18 @@ checksum = "59fe19d70f5dacc03f6e46777213facae5ac3801575d56ca6cbd4c93dcd12310"
 dependencies = [
  "js-sys",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "web_controller"
+version = "0.1.0"
+
+[[package]]
+name = "web_controller_derive"
+version = "0.1.0"
+dependencies = [
+ "quote",
+ "syn",
 ]
 
 [[package]]
