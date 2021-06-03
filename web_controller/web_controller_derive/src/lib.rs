@@ -28,7 +28,32 @@ fn impl_hello_macro(ast: &syn::DeriveInput) -> TokenStream {
             fn new() {
                 println!("Hello, Macro! NEWNEWNEW {}!", stringify!(#name));
             }
-            fn new_log() {
+            fn new_init(&mut self) {
+                let req = self.request;
+                let server_context = self.server_context;
+
+                // info!("TEST TEST {:?}", self.tmp_str);
+                //         self.tmp_str = String::from("ads");
+                // info!("TEST TEST {:?}", self.tmp_str);
+                let (req_parts, req_body) = req.into_parts();
+                // req: Request<Body>;
+                // server_context: Arc<ServerContext>;
+                // let log = DBLogObject {
+                //     request_id: 1234,
+                //     payment_id: 123456,
+                //     stage: stage.into(),
+                //     log_type: "".into(),
+                //     microtime_bgn: 0,
+                //     microtime_end: 0,
+                //     result: 0,
+                //     http_code: 200,
+                //     send_data: body_str.into(), //format!("{:?}", full_body),
+                //     send_headers: format!("{:?}", req_parts),
+                //     receive_data: "".into(),
+                //     receive_headers: "".into(),
+                // };
+                // log_db!(log, server_context.db_pool);
+
                 println!("Hello, Macro! NEWNEWNEW {}!", stringify!(#name));
             }
             fn hello_macro() {

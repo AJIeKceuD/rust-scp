@@ -1,4 +1,4 @@
--- Add migration script here
+-- Add up migration script here
 CREATE TABLE logs
 (
     id              bigserial NOT NULL PRIMARY KEY,
