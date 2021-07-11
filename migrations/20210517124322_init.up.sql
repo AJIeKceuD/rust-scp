@@ -1,5 +1,12 @@
 -- Add up migration script here
-CREATE TABLE logs
+CREATE SEQUENCE api_request_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    NO MAXVALUE
+    CACHE 1;
+
+CREATE TABLE log
 (
     id              bigserial NOT NULL PRIMARY KEY,
     request_id      bigint,

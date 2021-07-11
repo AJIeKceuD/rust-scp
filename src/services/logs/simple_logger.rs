@@ -2,8 +2,8 @@ use log::{Record, Level, Metadata};
 
 pub struct SimpleLogger;
 
-mod db_log_object;
-use db_log_object::DBLogObject as DBLogObject;
+// mod db_log_object;
+// use db_log_object::DBLogObject as DBLogObject;
 
 impl log::Log for SimpleLogger {
     fn enabled(&self, metadata: &Metadata) -> bool {

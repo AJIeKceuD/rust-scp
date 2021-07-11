@@ -1,8 +1,8 @@
 #[macro_export]
 macro_rules! log_db {
     ($log_object:expr, $pool:expr) => {
-        block_on(
-            async {
+        // block_on(
+        //     async {
                 let log_object = $log_object;
 
                 // why not work?
@@ -23,7 +23,7 @@ macro_rules! log_db {
                 debug!("log insert data: {:?}", log_object);
 
                 let log_request = sqlx::query!("
-                INSERT INTO logs (
+                INSERT INTO log (
                     request_id,
                     payment_id,
                     stage,
@@ -40,7 +40,7 @@ macro_rules! log_db {
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
                 RETURNING id
                 ",
-                log_object.request_id,
+                log_object.request_id.0,
                 log_object.payment_id,
                 log_object.stage,
                 log_object.log_type,
@@ -53,10 +53,12 @@ macro_rules! log_db {
                 log_object.receive_data,
                 log_object.receive_headers
                 )
-                .fetch_one(&$pool);
+                .fetch_one($pool);
+                debug!("log insert await");
 
                 let log_id = match log_request.await {
                     Ok(log_row) => {
+                        debug!("log insert success: {:?}", log_row);
                         log_row.id
                     },
                     Err(e) => {
@@ -66,7 +68,7 @@ macro_rules! log_db {
                 };
 
                 debug!("log insert result: {:?}", log_id);
-            }
-        )
+            // }
+        // )
     }
 }

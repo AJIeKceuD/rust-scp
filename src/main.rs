@@ -18,6 +18,7 @@ use sqlx::{Pool, Postgres};
 use log::{error, warn, info, debug, trace};
 
 #[macro_use] mod helpers; // mod order is important!
+// mod middleware;
 mod router;
 #[path="./services/logs/simple_logger.rs"]
 mod simple_logger;

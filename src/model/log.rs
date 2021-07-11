@@ -1,9 +1,15 @@
 use serde::{Serialize, Deserialize};
 use strum_macros::Display;
 
+pub struct LogId(i64);
+
+#[derive(Serialize, Deserialize, Debug, Clone, Copy)]
+pub struct RequestId(pub Option<i64>);
+
+struct PayId(i64);
+
 #[derive(Display, Debug)]
-#[allow(dead_code)]
-pub enum DBLogStage_t {
+pub enum LogStage {
     None,
     Init,
     Contract,
@@ -11,8 +17,8 @@ pub enum DBLogStage_t {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct DBLogObject_t {
-    pub request_id: i64,
+pub struct LogModel {
+    pub request_id: RequestId,
     pub payment_id: Option<i64>,
     pub stage: String,
     pub log_type: String,
