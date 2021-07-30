@@ -93,6 +93,21 @@ async fn db_pg_pool_init() -> Result<Pool<Postgres>, sqlx::Error> {
     Ok(pool)
 }
 
+async fn rabbitmq_init() -> Result<amiquip::Connection, amiquip::Error> {
+    let rabbitmq_url = match env::var("RABBITMQ_URL") {
+        Ok(val) => {
+            val
+        },
+        Err(e) => {
+            return Err(amiquip::Error::IoErrorReadingSocket {source: std::io::Error::new(ErrorKind::Other, "Cant read RABBITMQ_URL from .env")})
+        }
+    };
+
+    let mut connection = amiquip::Connection::insecure_open(&rabbitmq_url)?;
+
+    Ok(connection)
+}
+
 fn logger_init() {
     use log::{LevelFilter};
 
@@ -114,6 +129,8 @@ fn logger_init() {
 
 pub struct ServerContext {
     db_pool: Pool<Postgres>,
+    // rabbitmq_channel: amiquip::Channel,
+    // rabbitmq_channel: amiquip::Connection,
 }
 
 #[tokio::main]
@@ -129,10 +146,20 @@ async fn main() -> Result<(), std::io::Error> {
             return Err(std::io::Error::new(ErrorKind::Other, "oh no!"))
         }
     };
+    // let rabbitmq_channel = match rabbitmq_init().await {
+    //     Ok(connection) => {
+    //         connection
+    //     },
+    //     Err(e) => {
+    //         eprintln!("rabbitmq error: {:?}", e);
+    //         return Err(std::io::Error::new(ErrorKind::Other, "oh no!"))
+    //     }
+    // };
 
     let server_context = Arc::new(
         ServerContext {
             db_pool: pool,
+            // rabbitmq_channel: rabbitmq_channel,
         }
     );
 
@@ -160,6 +187,9 @@ async fn main() -> Result<(), std::io::Error> {
     if let Err(e) = graceful.await {
         eprintln!("server error: {}", e);
     };
+
+    // Not work. How close?
+    // &server_context.rabbitmq_connection.close();
 
     Ok(())
 

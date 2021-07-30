@@ -19,3 +19,4 @@ web_controller = { path = "web_controller" }
 web_controller_derive = { path = "web_controller/web_controller_derive" }
 strum = "0.21"
 strum_macros = "0.21.1" #enum to string
+amiquip = "0.4.0"

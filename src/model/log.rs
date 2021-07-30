@@ -10,24 +10,39 @@ struct PayId(i64);
 
 #[derive(Display, Debug)]
 pub enum LogStage {
-    None,
+    Unknown,
     Init,
     Contract,
     Auth,
 }
 
+#[derive(Serialize, Deserialize, Display, Debug)]
+pub enum LogType {
+    Unknown,
+    Http,
+    DB,
+}
+
+#[derive(Serialize, Deserialize, Display, Debug)]
+pub enum LogName {
+    Unknown,
+    RequestIn,
+    DBSomeAction,
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct LogModel {
-    pub request_id: RequestId,
+    pub request_id: Option<RequestId>,
     pub payment_id: Option<i64>,
     pub stage: String,
-    pub log_type: String,
+    pub log_type: LogType,
+    pub name: LogName,
     pub microtime_bgn: i64,
     pub microtime_end: i64,
     pub result: i32,
     pub http_code: i32,
-    pub send_data: String, // out_data
-    pub send_headers: String, // out_basis
-    pub receive_data: String, // in_data
-    pub receive_headers: String, // in_basis
+    pub in_data: String, // in_data
+    pub in_basis: String, // in_basis
+    pub out_data: String, // out_data
+    pub out_basis: String, // out_basis
 }
