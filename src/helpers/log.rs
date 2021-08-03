@@ -89,6 +89,7 @@ macro_rules! log_update_db {
         // block_on(
         //     async {
                 let log_object = $log_object;
+                let time_now = Local::now();
 
                 debug!("log update data: {:?}", log_object);
 
@@ -106,10 +107,11 @@ macro_rules! log_update_db {
                     -- in_data,
                     -- in_basis,
                     out_data,
-                    out_basis
+                    out_basis,
+                    update_at
                 )
-                = ($1, $2, $3, $4, $5, $6, $7, $8)
-                WHERE id = $9
+                = ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                WHERE id = $10
                 RETURNING id
                 ",
                 // log_object.request_id,
@@ -125,6 +127,7 @@ macro_rules! log_update_db {
                 // log_object.in_basis,
                 log_object.out_data,
                 log_object.out_basis,
+                time_now,
 
                 $log_id
                 )

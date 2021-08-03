@@ -10,7 +10,7 @@ hyper = { version = "0.14", features = ["full"] }
 tokio = { version = "1", features = ["full"] }
 futures = "0.3"
 log = { version = "0.4.14", features = ["std"] }
-sqlx = { version = "0.5.1", features = ["postgres", "runtime-tokio-rustls"] }
+sqlx = { version = "0.5.1", features = ["postgres", "runtime-tokio-rustls", "chrono"] }
 tokio-postgres = "0.7.0"
 serde = "1.0.125"
 serde_json = "1.0.64"
@@ -20,3 +20,4 @@ web_controller_derive = { path = "web_controller/web_controller_derive" }
 strum = "0.21"
 strum_macros = "0.21.1" #enum to string
 amiquip = "0.4.0"
+chrono = "0.4.19"
