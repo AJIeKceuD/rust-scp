@@ -1,4 +1,5 @@
 use std::{thread, time};
+use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::sync::Arc;
 use hyper::{Body, Request, Response, Method, StatusCode};
@@ -38,7 +39,13 @@ pub struct RequestContext {
     stage: Option<LogStage>,
 }
 
-pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContext>) -> Result<Response<Body>, hyper::Error> {
+#[derive(Debug)]
+struct ControllerResponse<T> {
+    response_obj: T,
+    headers: HashMap<String, String>,
+}
+
+pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContext>) -> Result<Response<Body>, std::io::Error> {
     // Ok(Response::new("Hello, World".into()))
     let mut response = Response::new(Body::empty());
     let since_the_epoch = SystemTime::now()
@@ -54,7 +61,7 @@ pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContex
 
     // Split it here or deeper?
     let (request_parts, request_body) = req.into_parts();
-    let full_body = hyper::body::to_bytes(request_body).await?;
+    let full_body = hyper::body::to_bytes(request_body).await.unwrap(); // TODO remove unwrap
     let mut request_context = RequestContext{
         request_id: RequestId(None),
         request_parts: request_parts,
@@ -91,7 +98,7 @@ pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContex
 
     match (&request_context.request_parts.method, request_context.request_parts.uri.path()) {
         (&Method::GET, "/") => {
-            *response.body_mut() = Body::from("Try POSTing data to /echo");
+            // *response.body_mut() = Body::from("Try POSTing data to /echo");
         },
 
         (&Method::GET, "/test") => {
@@ -104,17 +111,20 @@ pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContex
             //     server_context: server_context,
             // };
             let controller = TestAsyncController::new(server_context.clone(), request_context).await?;
-            response = controller.index().await?;
+            let controller_response = controller.index().await?;
+
+            response = response_json!(&controller_response.response_obj);
+            info!("TEST response {:?}", response);
         },
 
         (&Method::GET, "/rabbit") => {
-            let controller = RabbitController::new(server_context.clone(), request_context).await?;
-            response = controller.index().await?;
+            // let controller = RabbitController::new(server_context.clone(), request_context).await?;
+            // response = controller.index().await?;
         },
 
         (&Method::GET, "/rabbit/add") => {
-            let controller = RabbitController::new(server_context.clone(), request_context).await?;
-            response = controller.add().await?;
+            // let controller = RabbitController::new(server_context.clone(), request_context).await?;
+            // response = controller.add().await?;
         },
 
 
@@ -124,11 +134,11 @@ pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContex
             let ten_millis = time::Duration::from_millis(20000);
             thread::sleep(ten_millis);
             let controller = TestAsyncController::new(server_context.clone(), request_context).await?;
-            response = controller.index().await?;
+            let controller_response = controller.index().await?;
         },
         (&Method::POST, "/echo") => {
             let controller = TestAsyncController::new(server_context.clone(), request_context).await?;
-            response = controller.index().await?;
+            let controller_response = controller.index().await?;
         },
 
         /*
@@ -162,7 +172,7 @@ pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContex
 
          */
         _ => {
-            *response.status_mut() = StatusCode::NOT_FOUND;
+            // *response.status_mut() = StatusCode::NOT_FOUND;
         },
     };
 

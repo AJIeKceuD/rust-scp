@@ -41,8 +41,8 @@ pub struct LogModel {
     pub microtime_end: i64,
     pub result: i32,
     pub http_code: i32,
-    pub in_data: String, // in_data
-    pub in_basis: String, // in_basis
-    pub out_data: String, // out_data
-    pub out_basis: String, // out_basis
+    pub in_data: String,
+    pub in_basis: String,
+    pub out_data: String,
+    pub out_basis: String,
 }
