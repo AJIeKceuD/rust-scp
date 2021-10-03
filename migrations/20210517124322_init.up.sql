@@ -24,4 +24,14 @@ CREATE TABLE log
     out_basis       text,
     create_at       timestamp with time zone default current_timestamp,
     update_at       timestamp with time zone default current_timestamp
-)
+);
+
+CREATE TABLE record
+(
+    id              bigserial NOT NULL PRIMARY KEY,
+    outer_id        bigint,
+    stage           text,
+    sum             integer,
+    create_at       timestamp with time zone default current_timestamp,
+    update_at       timestamp with time zone default current_timestamp
+);

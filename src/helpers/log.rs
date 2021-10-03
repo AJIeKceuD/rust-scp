@@ -4,6 +4,14 @@ macro_rules! log_insert_db {
         {
         // block_on(
         //     async {
+                let since_the_epoch = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .expect("Time went backwards");
+                let since_the_epoch_in_ms = since_the_epoch.as_secs() as i64 * 1000 +
+                    since_the_epoch.subsec_nanos() as i64 / 1_000_000;
+                println!("since_the_epoch {:?}", since_the_epoch);
+                println!("since_the_epoch_in_ms {:?}", since_the_epoch_in_ms);
+
                 let log_object = $log_object;
 
                 // why not work?
@@ -51,8 +59,8 @@ macro_rules! log_insert_db {
                 log_object.stage,
                 log_object.log_type.to_string(),
                 log_object.name.to_string(),
-                log_object.microtime_bgn,
-                log_object.microtime_end,
+                since_the_epoch_in_ms,
+                0,//log_object.microtime_end,
                 // log_object.result,
                 // log_object.http_code,
                 log_object.in_data,
@@ -89,6 +97,12 @@ macro_rules! log_update_db {
         // block_on(
         //     async {
                 let log_object = $log_object;
+
+                let since_the_epoch = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)
+                    .expect("Time went backwards");
+                let since_the_epoch_in_ms = since_the_epoch.as_secs() as i64 * 1000 +
+                    since_the_epoch.subsec_nanos() as i64 / 1_000_000;
                 let time_now = Local::now();
 
                 debug!("log update data: {:?}", log_object);
@@ -97,8 +111,8 @@ macro_rules! log_update_db {
                 UPDATE log SET (
                     -- request_id,
                     payment_id,
-                    stage,
-                    type,
+                    -- stage,
+                    -- type,
                     -- name,
                     -- microtime_bgn,
                     microtime_end,
@@ -110,17 +124,17 @@ macro_rules! log_update_db {
                     out_basis,
                     update_at
                 )
-                = ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-                WHERE id = $10
+                = ($1, $2, $3, $4, $5, $6, $7)
+                WHERE id = $8
                 RETURNING id
                 ",
                 // log_object.request_id,
                 log_object.payment_id,
-                log_object.stage,
-                log_object.log_type.to_string(),
+                // log_object.stage,
+                // log_object.log_type.to_string(),
                 // log_object.name.to_string(),
                 // log_object.microtime_bgn,
-                log_object.microtime_end,
+                since_the_epoch_in_ms,
                 log_object.result,
                 log_object.http_code,
                 // log_object.in_data,

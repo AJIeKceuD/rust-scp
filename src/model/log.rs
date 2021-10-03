@@ -21,13 +21,18 @@ pub enum LogType {
     Unknown,
     Http,
     DB,
+    Fn,
+    Milestone,
 }
 
 #[derive(Serialize, Deserialize, Display, Debug)]
 pub enum LogName {
     Unknown,
     RequestIn,
-    DBSomeAction,
+    DB,
+    DBRecordRegister,
+    Fn,
+    FnRecordRegister,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -37,12 +42,30 @@ pub struct LogModel {
     pub stage: String,
     pub log_type: LogType,
     pub name: LogName,
-    pub microtime_bgn: i64,
-    pub microtime_end: i64,
-    pub result: i32,
-    pub http_code: i32,
+    // pub microtime_bgn: i64,
+    // pub microtime_end: i64,
+    pub result: Option<i32>,
+    pub http_code: Option<i32>,
     pub in_data: String,
     pub in_basis: String,
+    pub out_data: String,
+    pub out_basis: String,
+}
+#[derive(Serialize, Deserialize, Debug)]
+pub struct LogModelIn {
+    pub request_id: Option<RequestId>,
+    pub payment_id: Option<i64>,
+    pub stage: String,
+    pub log_type: LogType,
+    pub name: LogName,
+    pub in_data: String,
+    pub in_basis: String,
+}
+#[derive(Serialize, Deserialize, Debug)]
+pub struct LogModelOut {
+    pub payment_id: Option<i64>,
+    pub result: Option<i32>,
+    pub http_code: Option<i32>,
     pub out_data: String,
     pub out_basis: String,
 }

@@ -2,10 +2,12 @@ use std::{thread, time};
 use std::collections::HashMap;
 use std::time::{SystemTime, UNIX_EPOCH};
 use std::sync::Arc;
+use chrono::{Utc, Local};
 use hyper::{Body, Request, Response, Method, StatusCode};
 use hyper::body::Bytes;
 use hyper::http::request::Parts;
 use futures::TryStreamExt as _; // map_ok()
+use serde_json::{Value, json};
 use log::{error, warn, info, debug, trace};
 
 use crate::ServerContext;
@@ -24,12 +26,24 @@ mod model;
 use model::log::LogModel;
 use model::log::LogStage;
 use model::log::RequestId;
+use model::log::LogType;
+use model::log::LogName;
 
 #[path="./middleware/mod.rs"]
 mod middleware;
 use middleware::request_id::RequestIdMiddleware;
-use crate::router::model::log::{LogType, LogName};
-use chrono::{Utc, Local};
+
+#[path="./services/mapper/inner_result.rs"]
+mod inner_result;
+use inner_result::InnerResult;
+use inner_result::InnerResultElement;
+// use inner_result::InnerResultCode;
+use inner_result::InnerResultInfo;
+use inner_result::InnerResultRepeat;
+
+#[path="./services/mapper/outer_result.rs"]
+mod outer_result;
+use outer_result::{OuterResult, OuterResultCode, OuterResultInfo, OuterResultRepeat};
 
 #[derive(Debug)]
 pub struct RequestContext {
@@ -40,21 +54,14 @@ pub struct RequestContext {
 }
 
 #[derive(Debug)]
-struct ControllerResponse<T> {
-    response_obj: T,
+struct ControllerResponse {
+    data: Value,
     headers: HashMap<String, String>,
+    status: Option<StatusCode>,
 }
 
 pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContext>) -> Result<Response<Body>, std::io::Error> {
     // Ok(Response::new("Hello, World".into()))
-    let mut response = Response::new(Body::empty());
-    let since_the_epoch = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("Time went backwards");
-    let since_the_epoch_in_ms = since_the_epoch.as_secs() as i64 * 1000 +
-        since_the_epoch.subsec_nanos() as i64 / 1_000_000;
-    println!("since_the_epoch {:?}", since_the_epoch);
-    println!("since_the_epoch_in_ms {:?}", since_the_epoch_in_ms);
     println!("Thread ID: {:?}", thread::current().id());
     println!("{:?}", req);
     println!("{:?}", server_context.db_pool);
@@ -74,17 +81,34 @@ pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContex
     // middleware for set global const like request_id, stage, ...
     request_context.request_id = RequestIdMiddleware::new(&server_context.db_pool).await;
 
+    let mut response = Response::new(Body::empty());
+    let mut response_result = InnerResult::ErrorUnknown( InnerResultElement {info: InnerResultInfo( String::from( InnerResultInfo::ERROR_UNKNOWN ) )} );
+    let mut controller_response = ControllerResponse{
+        data: json!({
+            "code": OuterResult::get_code(&response_result),
+            "info": OuterResult::get_info(&response_result),
+            "repeat": OuterResult::is_repeatable(&response_result),
+        }),
+        headers: HashMap::new(),
+        status: Some(StatusCode::OK),
+    };
+
     // log all request
+    // let since_the_epoch = SystemTime::now()
+    //     .duration_since(UNIX_EPOCH)
+    //     .expect("Time went backwards");
+    // let since_the_epoch_in_ms = since_the_epoch.as_secs() as i64 * 1000 +
+    //     since_the_epoch.subsec_nanos() as i64 / 1_000_000;
+    // println!("since_the_epoch {:?}", since_the_epoch);
+    // println!("since_the_epoch_in_ms {:?}", since_the_epoch_in_ms);
     let log = LogModel {
         request_id: Some(request_context.request_id),
         payment_id: Option::None,
         stage: LogStage::Unknown.to_string(),
         log_type: LogType::Http,
         name: LogName::RequestIn,
-        microtime_bgn: since_the_epoch_in_ms,
-        microtime_end: 0,
-        result: -1,
-        http_code: -1,
+        result: Some(-1),
+        http_code: Some(-1),
         in_data: format!("{:?}", request_context.full_body),
         in_basis: format!("{:?}", request_context.request_parts),
         out_data: "".into(),
@@ -94,7 +118,7 @@ pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContex
     // why not work async() in async func?
 
     // /Middlewares
-    println!("{:?}", request_context);
+    // println!("{:?}", request_context);
 
     match (&request_context.request_parts.method, request_context.request_parts.uri.path()) {
         (&Method::GET, "/") => {
@@ -111,10 +135,7 @@ pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContex
             //     server_context: server_context,
             // };
             let controller = TestAsyncController::new(server_context.clone(), request_context).await?;
-            let controller_response = controller.index().await?;
-
-            response = response_json!(&controller_response.response_obj);
-            info!("TEST response {:?}", response);
+            controller_response = controller.index().await?;
         },
 
         (&Method::GET, "/rabbit") => {
@@ -172,16 +193,22 @@ pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContex
 
          */
         _ => {
+            response_result = InnerResult::ErrorActionUnknown( InnerResultElement {info: InnerResultInfo( String::from( InnerResultInfo::ERROR_ACTION_UNKNOWN ) )} );
+            controller_response = ControllerResponse{
+                data: json!({
+                    "code": OuterResult::get_code(&response_result),
+                    "info": OuterResult::get_info(&response_result),
+                    "repeat": OuterResult::is_repeatable(&response_result),
+                }),
+                headers: HashMap::new(),
+                status: Some(StatusCode::NOT_FOUND),
+            };
             // *response.status_mut() = StatusCode::NOT_FOUND;
         },
     };
 
-    let since_the_epoch = SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .expect("Time went backwards");
-    let since_the_epoch_in_ms = since_the_epoch.as_secs() as i64 * 1000 +
-        since_the_epoch.subsec_nanos() as i64 / 1_000_000;
-
+    response = response_json!(&controller_response);
+    info!("TEST response {:?}", response);
     let (response_parts, response_body) = response.into_parts();
     let log = LogModel {
         request_id: None, // no need. We diff RequestID::None and None. RequestID::None mean we must set Null, None mean change no need.
@@ -189,10 +216,8 @@ pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContex
         stage: LogStage::Unknown.to_string(), // no need
         log_type: LogType::Http, // no need
         name: LogName::RequestIn, // no need
-        microtime_bgn: 0, // no need
-        microtime_end: since_the_epoch_in_ms,
-        result: 0, // ???
-        http_code: response_parts.status.as_u16().into(),
+        result: Some(-1), // ???
+        http_code: Some(response_parts.status.as_u16().into()),
         in_data: "".into(), // no need
         in_basis: "".into(), // no need
         out_data: format!("{:?}", response_body),

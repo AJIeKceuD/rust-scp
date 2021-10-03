@@ -8,6 +8,7 @@ use hyper::http::request::Parts;
 
 use serde::{Deserialize, Serialize};
 // use serde_json::json;
+use serde_json::{Value, json};
 
 use log::{error, warn, info, debug, trace};
 
@@ -20,13 +21,15 @@ use crate::ServerContext;
 use crate::router::model::log::{LogModel, RequestId};
 use crate::router::{RequestContext, ControllerResponse};
 
-#[path="../services/mapper/codes.rs"]
-mod codes;
-use codes::InnerCode;
-use codes::InnerResult;
-use codes::InnerResultCode;
-use codes::InnerResultInfo;
-use codes::InnerResultRepeat;
+use crate::router::inner_result::{InnerResult, InnerResultElement, InnerResultInfo, InnerResultRepeat};
+
+#[path="../services/mapper/outer_result.rs"]
+mod outer_result;
+use outer_result::{OuterResult, OuterResultCode, OuterResultInfo, OuterResultRepeat};
+
+#[path="../services/record_register.rs"]
+mod record_register;
+use record_register::RecordRegister;
 
 // use web_controller::WebController;
 // use web_controller_derive::WebController;
@@ -37,20 +40,12 @@ use codes::InnerResultRepeat;
 //curl -v -X GET -d '{"type": "hold", "v": "0", "amount": "10000", "client_id": "5", "paym_id": "6564565465464565646", "msisdn": "79267271941", "limit_type": "base"}' http://127.0.0.1:7878/test
 //curl -v -X GET -d '{"type": "hold"}' http://127.0.0.1:7878/test
 #[derive(Debug, Serialize, Deserialize)]
-pub struct TestAsyncRequest {
-    pub r#type: String,
-    pub v: i64,
-    // pub amount: i64,
-    // pub client_id: Option<i64>,
-    // pub paym_id: i64,
-    // pub msisdn: i32,
-    // pub limit_type: String, // base, ext, extprf
-}
-#[derive(Debug, Serialize, Deserialize)]
 pub struct TestAsyncResponse {
-    pub code: InnerResultCode,
-    pub info: InnerResultInfo,
-    pub repeat: InnerResultRepeat,
+    // pub result: InnerResult,
+    pub code: OuterResultCode,
+    pub info: OuterResultInfo,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub repeat: Option<OuterResultRepeat>,
     pub request_id: RequestId,
     pub payment_id: Option<i64>,
     pub tmp_str: String,
@@ -58,8 +53,8 @@ pub struct TestAsyncResponse {
 
 pub struct TestAsyncController {
     pub tmp_str: String,
-    pub request_context: RequestContext,
     pub server_context: Arc<ServerContext>,
+    pub request_context: RequestContext,
 }
 
 impl TestAsyncController {
@@ -78,37 +73,100 @@ impl TestAsyncController {
         })
     }
 
-    pub async fn index(&self) -> Result<ControllerResponse<TestAsyncResponse>, std::io::Error> {
+    pub async fn index(&self) -> Result<ControllerResponse, std::io::Error> {
         // let req = &self.request;
         info!("TEST req_h {:?}", &self.request_context.request_parts);
         info!("TEST full_body {:?}", &self.request_context.full_body);
         let server_context = &self.server_context;
-        let request_obj: TestAsyncRequest = match serde_json::from_slice(&self.request_context.full_body) {
-            Ok(request_obj) => {
-                request_obj
-            },
-            Err(e) => {
-                warn!("Request parse error: {:?}", e);
-                warn!("Request parse desc: {:?}", self.request_context.full_body);
+        let mut response_result = InnerResult::Ok( InnerResultElement{info: InnerResultInfo(String::new())} );
+        let mut request_body_value: Value = Value::Null;
 
-                let response_result = InnerCode::OK;
-                let response_obj = TestAsyncResponse {
-                    code: response_result.code,
-                    info: response_result.info,
-                    repeat: response_result.repeat,
-                    request_id: *&self.request_context.request_id,
-                    payment_id: None,
-                    tmp_str: "".to_string()
-                };
-                let controller_response = ControllerResponse {
-                    response_obj: response_obj,
-                    headers: HashMap::new(),
-                };
-                return Ok(controller_response);
-                // return Err(std::io::Error::new(ErrorKind::Other, "oh no!"));
-            }
-        };
-        info!("TEST test serde3 {:?}", request_obj);
+        loop {
+            request_body_value = match serde_json::from_slice(&self.request_context.full_body) {
+                Ok(request_obj) => {
+                    request_obj
+                },
+                Err(e) => {
+                    warn!("Request parse error: {:?}", e);
+                    warn!("Request parse desc: {:?}", self.request_context.full_body);
+
+                    response_result = InnerResult::ErrorIncomeData( InnerResultElement{info: InnerResultInfo ( String::from(InnerResultInfo::ERROR_INCOME_DATA_BAD_JSON) )} );
+                    break;
+                    // Value::Null
+                    // return Err(std::io::Error::new(ErrorKind::Other, "oh no!"));
+                }
+            };
+
+            // let payment_register = PaymentRegister { request_context: *&self.request_context, server_context: *&self.server_context.clone() };
+            let payment_register = RecordRegister::new(server_context.clone(), &self.request_context ).await?;
+            match request_body_value["v"].as_i64() { // TODO remove unwrap? or...
+                Some(0) => {
+                    response_result = payment_register.hold_v0().await?;
+                },
+                _ => response_result = InnerResult::ErrorIncomeData(
+                    InnerResultElement{
+                        info: InnerResultInfo ( String::from(InnerResultInfo::ERROR_INCOME_DATA_BAD_VERSION) + ". Value: " + request_body_value["v"].to_string().as_str() )
+                    }
+                ),
+            };
+
+            break;
+        }
+
+        // let request_value: Value = match serde_json::from_slice(&self.request_context.full_body) {
+        //     Ok(request_obj) => {
+        //         request_obj
+        //     },
+        //     Err(e) => {
+        //         warn!("Request parse error: {:?}", e);
+        //         warn!("Request parse desc: {:?}", self.request_context.full_body);
+        //
+        //         let response_result = InnerResult::ErrorIncomeDataParse( InnerResultElement{info: InnerResultInfo(String::new())} );
+        //         let response_obj = TestAsyncResponse {
+        //             result: response_result,
+        //             // code: response_result.code,
+        //             // info: response_result.info,
+        //             // repeat: response_result.is_repeatable(),
+        //             request_id: *&self.request_context.request_id,
+        //             payment_id: None,
+        //             tmp_str: "".to_string()
+        //         };
+        //         let controller_response = ControllerResponse {
+        //             data: response_obj,
+        //             headers: HashMap::new(),
+        //         };
+        //         return Ok(controller_response);
+        //         // return Err(std::io::Error::new(ErrorKind::Other, "oh no!"));
+        //     }
+        // };
+
+        // let request_obj: TestAsyncRequest = match serde_json::from_slice(&self.request_context.full_body) {
+        //     Ok(request_obj) => {
+        //         request_obj
+        //     },
+        //     Err(e) => {
+        //         warn!("Request parse error: {:?}", e);
+        //         warn!("Request parse desc: {:?}", self.request_context.full_body);
+        //
+        //         let response_result = InnerResult::ErrorIncomeData( InnerResultElement{info: InnerResultInfo(String::new())} );
+        //         let response_obj = TestAsyncResponse {
+        //             result: response_result,
+        //             // code: response_result.code,
+        //             // info: response_result.info,
+        //             // repeat: response_result.is_repeatable(),
+        //             request_id: *&self.request_context.request_id,
+        //             payment_id: None,
+        //             tmp_str: "".to_string()
+        //         };
+        //         let controller_response = ControllerResponse {
+        //             data: response_obj,
+        //             headers: HashMap::new(),
+        //         };
+        //         return Ok(controller_response);
+        //         // return Err(std::io::Error::new(ErrorKind::Other, "oh no!"));
+        //     }
+        // };
+        // info!("TEST test serde3 {:?}", request_obj);
 
         // let mut response = Response::new(Body::empty());
         //
@@ -117,22 +175,23 @@ impl TestAsyncController {
         //     .header("Foo", "Bar")
         //     .status(StatusCode::NOT_FOUND);
 
-        let response_result = InnerCode::OK;
         let response_obj = TestAsyncResponse {
-            code: response_result.code,
-            info: response_result.info,
-            repeat: response_result.repeat,
+            code: OuterResult::get_code(&response_result),
+            info: OuterResult::get_info(&response_result),
+            repeat: OuterResult::is_repeatable(&response_result),
             request_id: *&self.request_context.request_id,
             payment_id: None,
             tmp_str: "".to_string()
         };
+        let response_obj = json!(response_obj);
         let controller_response = ControllerResponse {
-            response_obj: response_obj,
+            data: response_obj,
             headers: HashMap::new(),
+            status: Option::None,
         };
         // let response = response_json!(&response_obj);
         // info!("TEST response {:?}", response);
-        // info!("TEST controller_response {:?}", controller_response);
+        info!("TEST controller_response {:?}", controller_response);
 
         Ok(controller_response)
     }
