@@ -39,9 +39,18 @@ impl InnerResult {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct InnerResultElement {
-    // pub code: InnerResultCode,
-    pub info: InnerResultInfo,
+    pub info: InnerResultInfo, // store info for answer
+    pub detail: Option<String>, // store private info for logs
     // pub repeat: InnerResultRepeat, use is_repeatable
+}
+
+impl Default for InnerResultElement {
+    fn default() -> InnerResultElement {
+        InnerResultElement {
+            info: InnerResultInfo( String::new() ),
+            detail: Option::None,
+        }
+    }
 }
 
 // #[derive(Debug, Serialize, Deserialize)]

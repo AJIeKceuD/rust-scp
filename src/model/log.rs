@@ -30,9 +30,10 @@ pub enum LogName {
     Unknown,
     RequestIn,
     DB,
-    DBRecordRegister,
+    DBRecordHold,
     Fn,
     FnRecordRegister,
+    FnRecordHold,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

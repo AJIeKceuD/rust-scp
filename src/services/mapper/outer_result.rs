@@ -21,7 +21,7 @@ impl OuterResult {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct OuterResultCode(i32);
+pub struct OuterResultCode(pub i32);
 
 impl From<&InnerResult> for OuterResultCode {
     fn from(item: &InnerResult) -> Self {

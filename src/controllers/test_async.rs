@@ -22,10 +22,7 @@ use crate::router::model::log::{LogModel, RequestId};
 use crate::router::{RequestContext, ControllerResponse};
 
 use crate::router::inner_result::{InnerResult, InnerResultElement, InnerResultInfo, InnerResultRepeat};
-
-#[path="../services/mapper/outer_result.rs"]
-mod outer_result;
-use outer_result::{OuterResult, OuterResultCode, OuterResultInfo, OuterResultRepeat};
+use crate::router::outer_result::{OuterResult, OuterResultCode, OuterResultInfo, OuterResultRepeat};
 
 #[path="../services/record_register.rs"]
 mod record_register;
@@ -78,8 +75,9 @@ impl TestAsyncController {
         info!("TEST req_h {:?}", &self.request_context.request_parts);
         info!("TEST full_body {:?}", &self.request_context.full_body);
         let server_context = &self.server_context;
-        let mut response_result = InnerResult::Ok( InnerResultElement{info: InnerResultInfo(String::new())} );
+        let mut response_result = InnerResult::Ok( InnerResultElement{info: InnerResultInfo(String::new()), ..Default::default()} );
         let mut request_body_value: Value = Value::Null;
+        let mut response_obj ;
 
         loop {
             request_body_value = match serde_json::from_slice(&self.request_context.full_body) {
@@ -90,7 +88,16 @@ impl TestAsyncController {
                     warn!("Request parse error: {:?}", e);
                     warn!("Request parse desc: {:?}", self.request_context.full_body);
 
-                    response_result = InnerResult::ErrorIncomeData( InnerResultElement{info: InnerResultInfo ( String::from(InnerResultInfo::ERROR_INCOME_DATA_BAD_JSON) )} );
+                    response_result = InnerResult::ErrorIncomeData( InnerResultElement{info: InnerResultInfo ( String::from(InnerResultInfo::ERROR_INCOME_DATA_BAD_JSON) ), ..Default::default()} );
+
+                    response_obj = TestAsyncResponse {
+                        code: OuterResult::get_code(&response_result),
+                        info: OuterResult::get_info(&response_result),
+                        repeat: OuterResult::is_repeatable(&response_result),
+                        request_id: *&self.request_context.request_id,
+                        payment_id: None,
+                        tmp_str: "".to_string()
+                    };
                     break;
                     // Value::Null
                     // return Err(std::io::Error::new(ErrorKind::Other, "oh no!"));
@@ -98,16 +105,37 @@ impl TestAsyncController {
             };
 
             // let payment_register = PaymentRegister { request_context: *&self.request_context, server_context: *&self.server_context.clone() };
-            let payment_register = RecordRegister::new(server_context.clone(), &self.request_context ).await?;
+            let record_register = RecordRegister::new(server_context.clone(), &self.request_context ).await?;
             match request_body_value["v"].as_i64() { // TODO remove unwrap? or...
                 Some(0) => {
-                    response_result = payment_register.hold_v0().await?;
+                    response_result = record_register.process_v0().await?;
+
+                    response_obj = TestAsyncResponse {
+                        code: OuterResult::get_code(&response_result),
+                        info: OuterResult::get_info(&response_result),
+                        repeat: OuterResult::is_repeatable(&response_result),
+                        request_id: *&self.request_context.request_id,
+                        payment_id: None,
+                        tmp_str: "".to_string()
+                    };
                 },
-                _ => response_result = InnerResult::ErrorIncomeData(
-                    InnerResultElement{
-                        info: InnerResultInfo ( String::from(InnerResultInfo::ERROR_INCOME_DATA_BAD_VERSION) + ". Value: " + request_body_value["v"].to_string().as_str() )
-                    }
-                ),
+                _ => {
+                    response_result = InnerResult::ErrorIncomeData(
+                        InnerResultElement{
+                            info: InnerResultInfo ( String::from(InnerResultInfo::ERROR_INCOME_DATA_BAD_VERSION)),
+                            detail: Some(String::from("Value: ") + request_body_value["v"].to_string().as_str())
+                        }
+                    );
+
+                    response_obj = TestAsyncResponse {
+                        code: OuterResult::get_code(&response_result),
+                        info: OuterResult::get_info(&response_result),
+                        repeat: OuterResult::is_repeatable(&response_result),
+                        request_id: *&self.request_context.request_id,
+                        payment_id: None,
+                        tmp_str: "".to_string()
+                    };
+                },
             };
 
             break;
@@ -175,14 +203,6 @@ impl TestAsyncController {
         //     .header("Foo", "Bar")
         //     .status(StatusCode::NOT_FOUND);
 
-        let response_obj = TestAsyncResponse {
-            code: OuterResult::get_code(&response_result),
-            info: OuterResult::get_info(&response_result),
-            repeat: OuterResult::is_repeatable(&response_result),
-            request_id: *&self.request_context.request_id,
-            payment_id: None,
-            tmp_str: "".to_string()
-        };
         let response_obj = json!(response_obj);
         let controller_response = ControllerResponse {
             data: response_obj,

@@ -124,8 +124,8 @@ macro_rules! log_update_db {
                     out_basis,
                     update_at
                 )
-                = ($1, $2, $3, $4, $5, $6, $7)
-                WHERE id = $8
+                = ($1, $2, $3, $4, $5, $6, now())
+                WHERE id = $7
                 RETURNING id
                 ",
                 // log_object.request_id,
@@ -141,7 +141,6 @@ macro_rules! log_update_db {
                 // log_object.in_basis,
                 log_object.out_data,
                 log_object.out_basis,
-                time_now,
 
                 $log_id
                 )

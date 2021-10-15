@@ -82,7 +82,7 @@ pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContex
     request_context.request_id = RequestIdMiddleware::new(&server_context.db_pool).await;
 
     let mut response = Response::new(Body::empty());
-    let mut response_result = InnerResult::ErrorUnknown( InnerResultElement {info: InnerResultInfo( String::from( InnerResultInfo::ERROR_UNKNOWN ) )} );
+    let mut response_result = InnerResult::ErrorUnknown( InnerResultElement {info: InnerResultInfo( String::from( InnerResultInfo::ERROR_UNKNOWN ) ), ..Default::default()} );
     let mut controller_response = ControllerResponse{
         data: json!({
             "code": OuterResult::get_code(&response_result),
@@ -193,7 +193,7 @@ pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContex
 
          */
         _ => {
-            response_result = InnerResult::ErrorActionUnknown( InnerResultElement {info: InnerResultInfo( String::from( InnerResultInfo::ERROR_ACTION_UNKNOWN ) )} );
+            response_result = InnerResult::ErrorActionUnknown( InnerResultElement {info: InnerResultInfo( String::from( InnerResultInfo::ERROR_ACTION_UNKNOWN ) ), ..Default::default()} );
             controller_response = ControllerResponse{
                 data: json!({
                     "code": OuterResult::get_code(&response_result),
@@ -208,7 +208,13 @@ pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContex
     };
 
     response = response_json!(&controller_response);
+    let response_result = match &controller_response.data["code"].as_i64() {
+        Some(value) => Some(*value as i32),
+        Option::None => None,
+    };
+    info!("TEST controller_response code {:?}", response_result);
     info!("TEST response {:?}", response);
+
     let (response_parts, response_body) = response.into_parts();
     let log = LogModel {
         request_id: None, // no need. We diff RequestID::None and None. RequestID::None mean we must set Null, None mean change no need.
@@ -216,7 +222,7 @@ pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContex
         stage: LogStage::Unknown.to_string(), // no need
         log_type: LogType::Http, // no need
         name: LogName::RequestIn, // no need
-        result: Some(-1), // ???
+        result: response_result, // ???
         http_code: Some(response_parts.status.as_u16().into()),
         in_data: "".into(), // no need
         in_basis: "".into(), // no need
