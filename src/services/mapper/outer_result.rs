@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use crate::router::inner_result::{InnerResult, InnerResultInfo, InnerResultElement, InnerResultRepeat};
+use super::inner_result::{InnerResult, InnerResultInfo, InnerResultElement, InnerResultRepeat};
 
 pub struct OuterResult {}
 

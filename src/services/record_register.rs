@@ -10,11 +10,28 @@ use sqlx::{Row};
 
 use log::{error, warn, info, debug, trace};
 
-use crate::router::inner_result::{InnerResult, InnerResultElement, InnerResultInfo};
-use crate::router::model::log::{LogModel, LogStage, LogType, LogName, RequestId, LogModelOut, LogModelIn};
+use crate::services::mapper::{
+    inner_result::{
+        InnerResult,
+        InnerResultElement,
+        InnerResultInfo,
+        InnerResultRepeat,
+    },
+};
+use crate::model::log::{
+    LogModel,
+    LogStage,
+    LogType,
+    LogName,
+    RequestId,
+    LogModelOut,
+    LogModelIn,
+};
+
 use crate::ServerContext;
 use crate::router::{RequestContext};
-use crate::router::outer_result::{OuterResult};
+
+use crate::services::mapper::outer_result::{OuterResult};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct IncomeDataV0 {

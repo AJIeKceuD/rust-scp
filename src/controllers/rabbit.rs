@@ -11,7 +11,7 @@ use crate::ServerContext;
 // #[path="./../services/logs/db_log_object.rs"]
 // mod db_log_object;
 // use db_log_object::DBLogObject as DBLogObject;
-use crate::router::model::log::{LogModel, RequestId};
+use crate::model::log::{LogModel, RequestId};
 use crate::router::RequestContext;
 use amiquip::{Exchange, Publish};
 

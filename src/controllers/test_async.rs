@@ -18,15 +18,25 @@ use log::{error, warn, info, debug, trace};
 // mod db_log_object;
 // use db_log_object::DBLogObject as DBLogObject;
 use crate::ServerContext;
-use crate::router::model::log::{LogModel, RequestId};
+use crate::model::log::{LogModel, RequestId};
 use crate::router::{RequestContext, ControllerResponse};
 
-use crate::router::inner_result::{InnerResult, InnerResultElement, InnerResultInfo, InnerResultRepeat};
-use crate::router::outer_result::{OuterResult, OuterResultCode, OuterResultInfo, OuterResultRepeat};
+use crate::services::mapper::{
+    inner_result::{
+        InnerResult,
+        InnerResultElement,
+        InnerResultInfo,
+        InnerResultRepeat,
+    },
+    outer_result::{
+        OuterResult,
+        OuterResultCode,
+        OuterResultInfo,
+        OuterResultRepeat,
+    },
+};
 
-#[path="../services/record_register.rs"]
-mod record_register;
-use record_register::RecordRegister;
+use crate::services::record_register::RecordRegister;
 
 // use web_controller::WebController;
 // use web_controller_derive::WebController;
@@ -70,7 +80,7 @@ impl TestAsyncController {
         })
     }
 
-    pub async fn index(&self) -> Result<ControllerResponse, std::io::Error> {
+    pub(crate) async fn index(&self) -> Result<ControllerResponse, std::io::Error> {
         // let req = &self.request;
         info!("TEST req_h {:?}", &self.request_context.request_parts);
         info!("TEST full_body {:?}", &self.request_context.full_body);

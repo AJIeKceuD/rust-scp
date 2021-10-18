@@ -1,4 +1,4 @@
-use crate::router::model::log::RequestId;
+use crate::model::log::RequestId;
 use sqlx::{Pool, Postgres};
 use log::{error, warn, info, debug, trace};
 

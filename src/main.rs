@@ -19,9 +19,13 @@ use log::{error, warn, info, debug, trace};
 
 #[macro_use] mod helpers; // mod order is important!
 // mod middleware;
-mod router;
-#[path="./services/logs/simple_logger.rs"]
-mod simple_logger;
+pub(crate) mod controllers;
+pub(crate) mod router;
+pub(crate) mod middleware;
+pub(crate) mod model;
+pub(crate) mod services;
+use services::logs::simple_logger;
+
 
 async fn shutdown_signal() {
     // Wait for the CTRL+C signal

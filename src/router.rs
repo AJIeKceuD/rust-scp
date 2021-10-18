@@ -11,53 +11,51 @@ use serde_json::{Value, json};
 use log::{error, warn, info, debug, trace};
 
 use crate::ServerContext;
-#[path="./controllers/test_async.rs"]
-mod test_controller;
 // use test_controller::TestController;
-use test_controller::TestAsyncController;
+use crate::controllers::test_async::TestAsyncController;
 
-#[path="./controllers/rabbit.rs"]
-mod rabbit_controller;
 // use test_controller::TestController;
-use rabbit_controller::RabbitController;
+use crate::controllers::rabbit::RabbitController;
 
-#[path="./model/mod.rs"]
-mod model;
-use model::log::LogModel;
-use model::log::LogStage;
-use model::log::RequestId;
-use model::log::LogType;
-use model::log::LogName;
+use crate::model::log::{
+    LogModel,
+    LogName,
+    LogStage,
+    LogType,
+    RequestId,
+};
 
-#[path="./middleware/mod.rs"]
-mod middleware;
-use middleware::request_id::RequestIdMiddleware;
+use crate::middleware::request_id::RequestIdMiddleware;
 
-#[path="./services/mapper/inner_result.rs"]
-mod inner_result;
-use inner_result::InnerResult;
-use inner_result::InnerResultElement;
-// use inner_result::InnerResultCode;
-use inner_result::InnerResultInfo;
-use inner_result::InnerResultRepeat;
-
-#[path="./services/mapper/outer_result.rs"]
-mod outer_result;
-use outer_result::{OuterResult, OuterResultCode, OuterResultInfo, OuterResultRepeat};
+use crate::services::mapper::{
+    inner_result::{
+        InnerResult,
+        InnerResultElement,
+        // InnerResultCode,
+        InnerResultInfo,
+        InnerResultRepeat,
+    },
+    outer_result::{
+        OuterResult,
+        OuterResultCode,
+        OuterResultInfo,
+        OuterResultRepeat,
+    },
+};
 
 #[derive(Debug)]
 pub struct RequestContext {
-    request_id: RequestId,
-    request_parts: Parts,
-    full_body: Bytes,
-    stage: Option<LogStage>,
+    pub(crate)request_id: RequestId,
+    pub(crate)request_parts: Parts,
+    pub(crate)full_body: Bytes,
+    pub(crate)stage: Option<LogStage>,
 }
 
 #[derive(Debug)]
-struct ControllerResponse {
-    data: Value,
-    headers: HashMap<String, String>,
-    status: Option<StatusCode>,
+pub(crate) struct ControllerResponse {
+    pub(crate) data: Value,
+    pub(crate) headers: HashMap<String, String>,
+    pub(crate) status: Option<StatusCode>,
 }
 
 pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContext>) -> Result<Response<Body>, std::io::Error> {
