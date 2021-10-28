@@ -1,15 +1,11 @@
 use std::sync::Arc;
 use std::collections::HashMap;
-use futures::io::ErrorKind;
-
-use hyper::{Request, Body, Response, HeaderMap, StatusCode};
-use hyper::body::Bytes;
-use hyper::http::request::Parts;
 
 use serde::{Deserialize, Serialize};
 // use serde_json::json;
 use serde_json::{Value, json};
 
+#[allow(unused_imports)]
 use log::{error, warn, info, debug, trace};
 
 // use serde_json::Result as serde_result;
@@ -18,7 +14,7 @@ use log::{error, warn, info, debug, trace};
 // mod db_log_object;
 // use db_log_object::DBLogObject as DBLogObject;
 use crate::ServerContext;
-use crate::model::log::{LogModel, RequestId};
+use crate::model::log::{RequestId};
 use crate::router::{RequestContext, ControllerResponse};
 
 use crate::services::mapper::{
@@ -26,7 +22,7 @@ use crate::services::mapper::{
         InnerResult,
         InnerResultElement,
         InnerResultInfo,
-        InnerResultRepeat,
+        // InnerResultRepeat,
     },
     outer_result::{
         OuterResult,
@@ -85,9 +81,9 @@ impl TestAsyncController {
         info!("TEST req_h {:?}", &self.request_context.request_parts);
         info!("TEST full_body {:?}", &self.request_context.full_body);
         let server_context = &self.server_context;
-        let mut response_result = InnerResult::Ok( InnerResultElement{info: InnerResultInfo(String::new()), ..Default::default()} );
-        let mut request_body_value: Value = Value::Null;
-        let mut response_obj ;
+        let response_result;// = InnerResult::Ok( InnerResultElement{info: InnerResultInfo(String::new()), ..Default::default()} );
+        let request_body_value: Value;// = Value::Null;
+        let response_obj ;
 
         loop {
             request_body_value = match serde_json::from_slice(&self.request_context.full_body) {

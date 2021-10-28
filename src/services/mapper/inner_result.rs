@@ -65,9 +65,9 @@ impl InnerResultInfo {
     pub const ERROR_INCOME_DATA_BAD_VERSION: &'static str = "Bad income data - version undefined or unsupported";
     pub const ERROR_ACTION_UNKNOWN: &'static str = "Action undefined";
 
-    pub fn to_string(&self) -> String {
-        self.0.clone()
-    }
+    // pub fn to_string(&self) -> String {
+    //     self.0.clone()
+    // }
 }
 
 #[derive(Debug, Serialize, Deserialize)]

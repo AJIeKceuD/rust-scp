@@ -1,5 +1,10 @@
 use serde::{Deserialize, Serialize};
-use super::inner_result::{InnerResult, InnerResultInfo, InnerResultElement, InnerResultRepeat};
+use super::inner_result::{
+    InnerResult,
+    // InnerResultInfo,
+    // InnerResultElement,
+    // InnerResultRepeat
+};
 
 pub struct OuterResult {}
 
@@ -49,14 +54,14 @@ impl From<&InnerResult> for OuterResultInfo {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OuterResultRepeat(bool);
 
-impl OuterResultRepeat {
-    pub fn is_repeatable(inner_result: &InnerResult) -> Option<Self> {
-        match inner_result {
-            InnerResult::Ok(_) => Option::None,
-            _ => Some(Self::from(inner_result)),
-        }
-    }
-}
+// impl OuterResultRepeat {
+//     pub fn is_repeatable(inner_result: &InnerResult) -> Option<Self> {
+//         match inner_result {
+//             InnerResult::Ok(_) => Option::None,
+//             _ => Some(Self::from(inner_result)),
+//         }
+//     }
+// }
 
 impl From<&InnerResult> for OuterResultRepeat {
     fn from(item: &InnerResult) -> Self {

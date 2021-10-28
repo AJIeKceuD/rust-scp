@@ -1,5 +1,6 @@
 use crate::model::log::RequestId;
 use sqlx::{Pool, Postgres};
+#[allow(unused_imports)]
 use log::{error, warn, info, debug, trace};
 
 pub struct RequestIdMiddleware {

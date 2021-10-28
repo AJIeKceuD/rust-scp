@@ -103,7 +103,6 @@ macro_rules! log_update_db {
                     .expect("Time went backwards");
                 let since_the_epoch_in_ms = since_the_epoch.as_secs() as i64 * 1000 +
                     since_the_epoch.subsec_nanos() as i64 / 1_000_000;
-                let time_now = Local::now();
 
                 debug!("log update data: {:?}", log_object);
 

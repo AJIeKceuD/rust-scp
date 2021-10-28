@@ -1,13 +1,10 @@
 use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
-use chrono::{Utc, Local};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
-use sqlx::postgres::PgArguments;
-use sqlx::postgres::PgRow;
 use sqlx::{Row};
 
+#[allow(unused_imports)]
 use log::{error, warn, info, debug, trace};
 
 use crate::services::mapper::{
@@ -15,11 +12,11 @@ use crate::services::mapper::{
         InnerResult,
         InnerResultElement,
         InnerResultInfo,
-        InnerResultRepeat,
+        // InnerResultRepeat,
     },
 };
 use crate::model::log::{
-    LogModel,
+    // LogModel,
     LogStage,
     LogType,
     LogName,
@@ -69,7 +66,7 @@ impl<'a> RecordRegister<'a> {
     pub async fn process_v0(&self) -> Result<InnerResult, std::io::Error> {
         let request_context = &self.request_context;
         let db_pool = &self.server_context.db_pool;
-        let mut result = InnerResult::Ok( InnerResultElement {info: InnerResultInfo( String::from( InnerResultInfo::OK ) ), ..Default::default()} );
+        let result;// = InnerResult::Ok( InnerResultElement {info: InnerResultInfo( String::from( InnerResultInfo::OK ) ), ..Default::default()} );
 
         // Log in-function
         let log = LogModelIn {
@@ -179,7 +176,8 @@ impl<'a> RecordRegister<'a> {
         INSERT INTO record (
             outer_id,
             stage,
-            sum
+            sum,
+            tmp
         )
         VALUES ($1, $2, $3)
         RETURNING id;

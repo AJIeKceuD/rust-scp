@@ -69,7 +69,7 @@ async fn db_pg_pool_init() -> Result<Pool<Postgres>, sqlx::Error> {
         Ok(db_url) => {
             db_url
         },
-        Err(e) => {
+        Err(_) => {
             return Err(sqlx::Error::Io(std::io::Error::new(ErrorKind::Other, "Cant read DATABASE from .env")))
         }
     };
@@ -102,7 +102,7 @@ async fn rabbitmq_init() -> Result<amiquip::Connection, amiquip::Error> {
         Ok(val) => {
             val
         },
-        Err(e) => {
+        Err(_) => {
             return Err(amiquip::Error::IoErrorReadingSocket {source: std::io::Error::new(ErrorKind::Other, "Cant read RABBITMQ_URL from .env")})
         }
     };

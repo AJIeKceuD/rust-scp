@@ -6,9 +6,8 @@ pub struct LogId(i64);
 #[derive(Serialize, Deserialize, Debug, Clone, Copy)]
 pub struct RequestId(pub Option<i64>);
 
-struct PayId(i64);
-
 #[derive(Display, Debug)]
+#[allow(dead_code)]
 pub enum LogStage {
     Unknown,
     Init,
@@ -17,6 +16,7 @@ pub enum LogStage {
 }
 
 #[derive(Serialize, Deserialize, Display, Debug)]
+#[allow(dead_code)]
 pub enum LogType {
     Unknown,
     Http,
@@ -26,6 +26,7 @@ pub enum LogType {
 }
 
 #[derive(Serialize, Deserialize, Display, Debug)]
+#[allow(dead_code)]
 pub enum LogName {
     Unknown,
     RequestIn,
