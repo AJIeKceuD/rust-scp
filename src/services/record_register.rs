@@ -40,6 +40,10 @@ pub struct IncomeDataV0 {
     // pub msisdn: i32,
     // pub limit_type: String, // base, ext, extprf
 }
+#[derive(Debug)]
+pub struct OutcomeDataProcess {
+    pub id: Option<i64>,
+}
 
 #[derive(Debug)]
 pub struct IncomeDataHold {
@@ -48,6 +52,10 @@ pub struct IncomeDataHold {
     // pub paym_id: i64,
     // pub msisdn: i32,
     // pub limit_type: String, // base, ext, extprf
+}
+#[derive(Debug)]
+pub struct OutcomeDataHold {
+    pub id: Option<i64>,
 }
 
 pub struct RecordRegister<'a> {
@@ -63,10 +71,13 @@ impl<'a> RecordRegister<'a> {
         })
     }
 
-    pub async fn process_v0(&self) -> Result<InnerResult, std::io::Error> {
+    pub async fn process_v0(&self) -> Result<OutcomeDataProcess, std::io::Error> {
         let request_context = &self.request_context;
         let db_pool = &self.server_context.db_pool;
         let result;// = InnerResult::Ok( InnerResultElement {info: InnerResultInfo( String::from( InnerResultInfo::OK ) ), ..Default::default()} );
+        let mut returned: OutcomeDataProcess = OutcomeDataProcess {
+            id: Option::None
+        };
 
         // Log in-function
         let log = LogModelIn {
@@ -101,7 +112,11 @@ impl<'a> RecordRegister<'a> {
                     let hold_data = IncomeDataHold {
                         amount: request_obj.amount,
                     };
-                    result = self.hold(hold_data).await;
+
+                    let hold_result = self.hold(hold_data).await;
+                    returned.id = hold_result.id;
+
+                    result = InnerResult::Ok( InnerResultElement {info: InnerResultInfo( String::from( InnerResultInfo::OK ) ), detail: Some(format!("{:?}", hold_result))} );
                 }
                 _ => {
                     result = InnerResult::ErrorIncomeData(InnerResultElement { info: InnerResultInfo(InnerResultInfo::ERROR_INCOME_DATA.to_string()), ..Default::default() });
@@ -151,10 +166,10 @@ impl<'a> RecordRegister<'a> {
         log_update_db!(log, db_pool, log_id_fn);
         // /Log in-function
 
-        Ok(result)
+        Ok(returned)
     }
 
-    async fn hold(&self, hold_data: IncomeDataHold) -> InnerResult {
+    async fn hold(&self, hold_data: IncomeDataHold) -> OutcomeDataHold {
         let request_context = &self.request_context;
         let db_pool = &self.server_context.db_pool;
         let mut result = InnerResult::Ok( InnerResultElement {info: InnerResultInfo( String::from( InnerResultInfo::OK ) ), ..Default::default()} );
@@ -172,70 +187,132 @@ impl<'a> RecordRegister<'a> {
         let log_id_fn = log_insert_db!(log, db_pool);
         // /Log in-function
 
-        let db_query = "
-        INSERT INTO record (
-            outer_id,
-            stage,
-            sum,
-            tmp
-        )
-        VALUES ($1, $2, $3)
-        RETURNING id;
-        ";
-        let db_data: (Option<i64>, String, i32) = (
+        // let record_id;
+        // sqlx::query!(
+        //     "INSERT INTO record (
+        //         outer_id,
+        //         stage,
+        //         sum,
+        //         tmp
+        //     )
+        //     VALUES ($1, $2, $3)
+        //     RETURNING id;",
+        //
+        //     Option::None::<i64>,
+        //     String::from("hold"),
+        //     hold_data.amount,
+        //
+        //     record_id
+        // )
+        // .fetch_one(db_pool);
+
+        let result_temp = query_with_log!(
+            db_pool,
+            &request_context,
+
+            "INSERT INTO record (
+                outer_id,
+                stage,
+                sum
+            )
+            VALUES ($1, $2, $3)
+            RETURNING id;",
+
             Option::None::<i64>,
             String::from("hold"),
             hold_data.amount
         );
 
-        let log = LogModelIn {
-            request_id: Some(request_context.request_id),
-            payment_id: Option::None,
-            stage: LogStage::Unknown.to_string(),
-            log_type: LogType::DB,
-            name: LogName::DBRecordHold,
-            in_data: format!("{:?}", db_data),
-            in_basis: String::from(db_query),
-        };
-        let log_id = log_insert_db!(log, db_pool);
-
-        let (db_data_a, db_data_b, db_data_c) = db_data;
-        let db_request =
-            sqlx::query(&db_query)
-                .bind(db_data_a)
-                .bind(db_data_b)
-                .bind(db_data_c)
-                .fetch_one(db_pool)
-                .await;
-        debug!("record insert await");
-
-        let mut record_id: i64 = 0;
-        match &db_request {
+        let hold_result: OutcomeDataHold = match result_temp {
             Ok(row) => {
                 // debug!("record insert success: {:?}", row);
-                record_id = row.get("id");
+                result = InnerResult::Ok(
+                    InnerResultElement {
+                        info: InnerResultInfo( String::from( InnerResultInfo::OK ) ),
+                        detail: Some(String::from(&*format!("{:?}", row)))
+                    }
+                );
+                OutcomeDataHold {
+                    id: Some(row.id),
+                }
             },
             Err(e) => {
-                error!("db error while record insert: {:?}", e);
                 result = InnerResult::ErrorUnknown(
                     InnerResultElement {
                         info: InnerResultInfo(String::from(InnerResultInfo::ERROR_UNKNOWN)),
                         detail: Some(String::from(&*format!("{:?}", e)))
                     }
                 );
+                OutcomeDataHold {
+                    id: Option::None,
+                }
             }
         };
 
-        debug!("record insert result: {:?}", record_id);
-
-        let log = LogModelOut {
-            payment_id: None,
-            result: Option::None,
-            http_code: Option::None,
-            out_data: format!("ID: {:?}, result {:?}", record_id, result),
-            out_basis: "".into(),
-        };
-        log_update_db!(log, db_pool, log_id);
+        // let db_query = "
+        // INSERT INTO record (
+        //     outer_id,
+        //     stage,
+        //     sum,
+        //     tmp
+        // )
+        // VALUES ($1, $2, $3)
+        // RETURNING id;
+        // ";
+        // let db_data: (Option<i64>, String, i32) = (
+        //     Option::None::<i64>,
+        //     String::from("hold"),
+        //     hold_data.amount
+        // );
+        //
+        // let log = LogModelIn {
+        //     request_id: Some(request_context.request_id),
+        //     payment_id: Option::None,
+        //     stage: LogStage::Unknown.to_string(),
+        //     log_type: LogType::DB,
+        //     name: LogName::DBRecordHold,
+        //     in_data: format!("{:?}", db_data),
+        //     in_basis: String::from(db_query),
+        // };
+        // let log_id = log_insert_db!(log, db_pool);
+        //
+        // let (db_data_a, db_data_b, db_data_c) = db_data;
+        // let db_request =
+        //     sqlx::query(&db_query)
+        //         .bind(db_data_a)
+        //         .bind(db_data_b)
+        //         .bind(db_data_c)
+        //         .fetch_one(db_pool)
+        //         .await;
+        // debug!("record insert await");
+        //
+        // let mut record_id: i64 = 0;
+        // match &db_request {
+        //     Ok(row) => {
+        //         // debug!("record insert success: {:?}", row);
+        //         record_id = row.get("id");
+        //     },
+        //     Err(e) => {
+        //         error!("db error while record insert: {:?}", e);
+        //         result = InnerResult::ErrorUnknown(
+        //             InnerResultElement {
+        //                 info: InnerResultInfo(String::from(InnerResultInfo::ERROR_UNKNOWN)),
+        //                 detail: Some(String::from(&*format!("{:?}", e)))
+        //             }
+        //         );
+        //     }
+        // };
+        //
+        // debug!("record insert result: {:?}", record_id);
+        //
+        // let log = LogModelOut {
+        //     payment_id: None,
+        //     result: Option::None,
+        //     http_code: Option::None,
+        //     out_data: format!("ID: {:?}, result {:?}", record_id, result),
+        //     out_basis: "".into(),
+        // };
+        // log_update_db!(log, db_pool, log_id);
 
         // Log in-function
         let log = LogModelOut {
@@ -248,6 +325,6 @@ impl<'a> RecordRegister<'a> {
         log_update_db!(log, db_pool, log_id_fn);
         // /Log in-function
 
-        result
+        hold_result
     }
 }

@@ -50,7 +50,7 @@ pub struct TestAsyncResponse {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub repeat: Option<OuterResultRepeat>,
     pub request_id: RequestId,
-    pub payment_id: Option<i64>,
+    pub record_id: Option<i64>,
     pub tmp_str: String,
 }
 
@@ -101,7 +101,7 @@ impl TestAsyncController {
                         info: OuterResult::get_info(&response_result),
                         repeat: OuterResult::is_repeatable(&response_result),
                         request_id: *&self.request_context.request_id,
-                        payment_id: None,
+                        record_id: None,
                         tmp_str: "".to_string()
                     };
                     break;
@@ -114,14 +114,21 @@ impl TestAsyncController {
             let record_register = RecordRegister::new(server_context.clone(), &self.request_context ).await?;
             match request_body_value["v"].as_i64() { // TODO remove unwrap? or...
                 Some(0) => {
-                    response_result = record_register.process_v0().await?;
+                    let process_result = record_register.process_v0().await?;
+
+                    response_result = InnerResult::Ok(
+                        InnerResultElement{
+                            info: InnerResultInfo(String::from( InnerResultInfo::OK )),
+                            detail: Some(format!("{:?}", process_result)),
+                        }
+                    );
 
                     response_obj = TestAsyncResponse {
                         code: OuterResult::get_code(&response_result),
                         info: OuterResult::get_info(&response_result),
                         repeat: OuterResult::is_repeatable(&response_result),
                         request_id: *&self.request_context.request_id,
-                        payment_id: None,
+                        record_id: process_result.id,
                         tmp_str: "".to_string()
                     };
                 },
@@ -138,7 +145,7 @@ impl TestAsyncController {
                         info: OuterResult::get_info(&response_result),
                         repeat: OuterResult::is_repeatable(&response_result),
                         request_id: *&self.request_context.request_id,
-                        payment_id: None,
+                        record_id: None,
                         tmp_str: "".to_string()
                     };
                 },

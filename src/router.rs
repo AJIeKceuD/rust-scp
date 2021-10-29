@@ -62,7 +62,7 @@ pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContex
     // Ok(Response::new("Hello, World".into()))
     println!("Thread ID: {:?}", thread::current().id());
     println!("{:?}", req);
-    println!("{:?}", server_context.db_pool);
+    // println!("{:?}", server_context.db_pool);
 
     // Split it here or deeper?
     let (request_parts, request_body) = req.into_parts();

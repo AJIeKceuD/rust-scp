@@ -35,8 +35,8 @@ macro_rules! log_insert_db {
                     None => RequestId(Some(0))
                 };
 
-                let log_request = sqlx::query!("
-                INSERT INTO log (
+                let log_request = sqlx::query!(
+                "INSERT INTO log (
                     request_id,
                     payment_id,
                     stage,
@@ -52,8 +52,7 @@ macro_rules! log_insert_db {
                     -- out_basis
                 )
                 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-                RETURNING id
-                ",
+                RETURNING id",
                 request_id.0,
                 log_object.payment_id,
                 log_object.stage,
@@ -106,8 +105,8 @@ macro_rules! log_update_db {
 
                 debug!("log update data: {:?}", log_object);
 
-                let log_request = sqlx::query!("
-                UPDATE log SET (
+                let log_request = sqlx::query!(
+                "UPDATE log SET (
                     -- request_id,
                     payment_id,
                     -- stage,
@@ -125,8 +124,7 @@ macro_rules! log_update_db {
                 )
                 = ($1, $2, $3, $4, $5, $6, now())
                 WHERE id = $7
-                RETURNING id
-                ",
+                RETURNING id",
                 // log_object.request_id,
                 log_object.payment_id,
                 // log_object.stage,
@@ -160,6 +158,74 @@ macro_rules! log_update_db {
                 debug!("log update result: {:?}", log_id);
             // }
         // )
+        }
+    }
+}
+
+macro_rules! query_with_log {
+    ($pool:expr, $request_context:expr, $sql:expr, $($opt:expr),*) => {
+        {
+            // Create log
+            let mut in_data = String::new();
+            $(
+                in_data.push_str(&format!("{:?}", $opt));
+                in_data.push_str(", ");
+            )*
+            let log = LogModelIn {
+                request_id: Some($request_context.request_id),
+                payment_id: Option::None,
+                stage: LogStage::Unknown.to_string(),
+                log_type: LogType::DB,
+                name: LogName::Unknown,
+                in_data: String::from(""),
+                in_basis: String::from($sql),
+            };
+            let log_id_fn = log_insert_db!(log, $pool);
+
+            // Request
+            let result;// = InnerResult::Ok( InnerResultElement {info: InnerResultInfo( String::from( InnerResultInfo::OK ) ), ..Default::default()} );
+
+            let db_request = sqlx::query!(
+                $sql,
+                $(
+                    $opt,
+                )*
+            )
+            .fetch_one($pool)
+            .await;
+
+            match &db_request {
+                Ok(row) => {
+                    // debug!("record insert success: {:?}", row);
+                    result = InnerResult::Ok(
+                        InnerResultElement {
+                            info: InnerResultInfo( String::from( InnerResultInfo::OK ) ),
+                            detail: Some(String::from(&*format!("{:?}", row)))
+                         }
+                     );
+                },
+                Err(e) => {
+                    error!("db error while insert: {:?}", e);
+                    result = InnerResult::ErrorUnknown(
+                        InnerResultElement {
+                            info: InnerResultInfo(String::from(InnerResultInfo::ERROR_UNKNOWN)),
+                            detail: Some(String::from(&*format!("{:?}", e)))
+                        }
+                    );
+                }
+            };
+
+            // Update log
+            let log = LogModelOut {
+                payment_id: Option::None,
+                result: Some(OuterResult::get_code(&result).0),
+                http_code: Option::None,
+                out_data: format!("{:?}", result),
+                out_basis: "".into(),
+            };
+            log_update_db!(log, $pool, log_id_fn);
+
+            db_request
         }
     }
 }

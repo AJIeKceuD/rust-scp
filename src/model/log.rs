@@ -30,9 +30,9 @@ pub enum LogType {
 pub enum LogName {
     Unknown,
     RequestIn,
-    DB,
+    // DB, // use Unknown?
     DBRecordHold,
-    Fn,
+    // Fn,
     FnRecordRegister,
     FnRecordHold,
 }

@@ -170,8 +170,8 @@ async fn main() -> Result<(), std::io::Error> {
     // We'll bind to 127.0.0.1:7878
     let addr = SocketAddr::from(([127, 0, 0, 1], 7878));
 
-    // A `Service` is needed for every connection, so this
-    // creates one from our `hello_world` function.
+    // For every connection, we must make a `Service` to handle all
+    // incoming HTTP requests on said connection.
     let service = make_service_fn(move |_| {
         let server_ctx = Arc::clone(&server_context);
         async move {
