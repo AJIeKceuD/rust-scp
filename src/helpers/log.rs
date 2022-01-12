@@ -37,35 +37,31 @@ macro_rules! log_insert_db {
 
                 let log_request = sqlx::query!(
                 "INSERT INTO log (
+                    parent_id,
                     request_id,
                     payment_id,
                     stage,
                     type,
                     name,
-                    microtime_bgn,
-                    microtime_end,
-                    -- result,
-                    -- http_code,
-                    in_data,
-                    in_basis
-                    -- out_data,
-                    -- out_basis
+                    microtime,
+                    result,
+                    http_code,
+                    data,
+                    basis
                 )
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
                 RETURNING id",
+                log_object.parent_id,
                 request_id.0,
                 log_object.payment_id,
                 log_object.stage,
                 log_object.log_type.to_string(),
                 log_object.name.to_string(),
                 since_the_epoch_in_ms,
-                0,//log_object.microtime_end,
-                // log_object.result,
-                // log_object.http_code,
-                log_object.in_data,
-                log_object.in_basis,
-                // log_object.out_data,
-                // log_object.out_basis
+                log_object.result,
+                log_object.http_code,
+                log_object.data,
+                log_object.basis
                 )
                 .fetch_one($pool);
                 debug!("log insert await");
@@ -90,6 +86,7 @@ macro_rules! log_insert_db {
     }
 }
 
+/*
 macro_rules! log_update_db {
     ($log_object:expr, $pool:expr, $log_id:expr) => {
         {
@@ -116,8 +113,8 @@ macro_rules! log_update_db {
                     microtime_end,
                     result,
                     http_code,
-                    -- in_data,
-                    -- in_basis,
+                    -- data,
+                    -- basis,
                     out_data,
                     out_basis,
                     update_at
@@ -134,8 +131,8 @@ macro_rules! log_update_db {
                 since_the_epoch_in_ms,
                 log_object.result,
                 log_object.http_code,
-                // log_object.in_data,
-                // log_object.in_basis,
+                // log_object.data,
+                // log_object.basis,
                 log_object.out_data,
                 log_object.out_basis,
 
@@ -161,24 +158,28 @@ macro_rules! log_update_db {
         }
     }
 }
+ */
 
 macro_rules! query_with_log {
     ($pool:expr, $request_context:expr, $sql:expr, $($opt:expr),*) => {
         {
             // Create log
-            let mut in_data = String::new();
+            let mut data = String::new();
             $(
-                in_data.push_str(&format!("{:?}", $opt));
-                in_data.push_str(", ");
+                data.push_str(&format!("{:?}", $opt));
+                data.push_str(", ");
             )*
-            let log = LogModelIn {
+            let log = LogModel {
+                parent_id: Option::None,
                 request_id: Some($request_context.request_id),
                 payment_id: Option::None,
                 stage: LogStage::Unknown.to_string(),
                 log_type: LogType::DB,
                 name: LogName::Unknown,
-                in_data: String::from(""),
-                in_basis: String::from($sql),
+                result: Option::None,
+                http_code: Option::None,
+                data: data,
+                basis: String::from($sql),
             };
             let log_id_fn = log_insert_db!(log, $pool);
 
@@ -215,15 +216,35 @@ macro_rules! query_with_log {
                 }
             };
 
-            // Update log
-            let log = LogModelOut {
+            // Create log
+            let mut data = String::new();
+            $(
+                data.push_str(&format!("{:?}", $opt));
+                data.push_str(", ");
+            )*
+            let log = LogModel {
+                parent_id: Some(log_id_fn),
+                request_id: Some($request_context.request_id),
                 payment_id: Option::None,
+                stage: LogStage::Unknown.to_string(),
+                log_type: LogType::DB,
+                name: LogName::Unknown,
                 result: Some(OuterResult::get_code(&result).0),
                 http_code: Option::None,
-                out_data: format!("{:?}", result),
-                out_basis: "".into(),
+                data: format!("{:?}", result),
+                basis: String::from(""),
             };
-            log_update_db!(log, $pool, log_id_fn);
+            log_insert_db!(log, $pool);
+
+            // Update log
+            // let log = LogModelOut {
+            //     payment_id: Option::None,
+            //     result: Some(OuterResult::get_code(&result).0),
+            //     http_code: Option::None,
+            //     out_data: format!("{:?}", result),
+            //     out_basis: "".into(),
+            // };
+            // log_update_db!(log, $pool, log_id_fn);
 
             db_request
         }

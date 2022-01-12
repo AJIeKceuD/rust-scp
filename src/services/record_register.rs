@@ -21,8 +21,7 @@ use crate::model::log::{
     LogType,
     LogName,
     RequestId,
-    LogModelOut,
-    LogModelIn,
+    LogModel,
 };
 
 use crate::ServerContext;
@@ -80,14 +79,17 @@ impl<'a> RecordRegister<'a> {
         };
 
         // Log in-function
-        let log = LogModelIn {
+        let log = LogModel {
+            parent_id: Option::None,
             request_id: Some(request_context.request_id),
             payment_id: Option::None,
             stage: LogStage::Unknown.to_string(),
             log_type: LogType::Fn,
             name: LogName::FnRecordRegister,
-            in_data: format!("{:?}", (request_context)),
-            in_basis: String::from(""),
+            result: Option::None,
+            http_code: Option::None,
+            data: format!("{:?}", (request_context)),
+            basis: String::from(""),
         };
         let log_id_fn = log_insert_db!(log, db_pool);
         // /Log in-function
@@ -156,33 +158,42 @@ impl<'a> RecordRegister<'a> {
         }
 
         // Log in-function
-        let log = LogModelOut {
+        let log = LogModel {
+            parent_id: Some(log_id_fn),
+            request_id: Some(request_context.request_id),
             payment_id: Option::None,
+            stage: LogStage::Unknown.to_string(),
+            log_type: LogType::Fn,
+            name: LogName::FnRecordRegister,
             result: Some(OuterResult::get_code(&result).0),
             http_code: Option::None,
-            out_data: format!("{:?}", result),
-            out_basis: "".into(),
+            data: format!("{:?}", returned),
+            basis: "".into(),
         };
-        log_update_db!(log, db_pool, log_id_fn);
+        log_insert_db!(log, db_pool);
+        // log_update_db!(log, db_pool, log_id_fn);
         // /Log in-function
 
         Ok(returned)
     }
 
     async fn hold(&self, hold_data: IncomeDataHold) -> OutcomeDataHold {
-        let request_context = &self.request_context;
+        let request_context = self.request_context;
         let db_pool = &self.server_context.db_pool;
         let mut result = InnerResult::Ok( InnerResultElement {info: InnerResultInfo( String::from( InnerResultInfo::OK ) ), ..Default::default()} );
 
         // Log in-function
-        let log = LogModelIn {
+        let log = LogModel {
+            parent_id: Option::None,
             request_id: Some(request_context.request_id),
             payment_id: Option::None,
             stage: LogStage::Unknown.to_string(),
             log_type: LogType::Fn,
             name: LogName::FnRecordHold,
-            in_data: format!("{:?}", (hold_data)),
-            in_basis: String::from(""),
+            result: Option::None,
+            http_code: Option::None,
+            data: format!("{:?}", (hold_data)),
+            basis: String::from(""),
         };
         let log_id_fn = log_insert_db!(log, db_pool);
         // /Log in-function
@@ -289,7 +300,7 @@ impl<'a> RecordRegister<'a> {
         // let mut record_id: i64 = 0;
         // match &db_request {
         //     Ok(row) => {
-        //         // debug!("record insert success: {:?}", row);
+        //         // debug!("record insert success: {:?}", row);-
         //         record_id = row.get("id");
         //     },
         //     Err(e) => {
@@ -315,14 +326,20 @@ impl<'a> RecordRegister<'a> {
         // log_update_db!(log, db_pool, log_id);
 
         // Log in-function
-        let log = LogModelOut {
+        let log = LogModel {
+            parent_id: Some(log_id_fn),
+            request_id: Some(request_context.request_id),
             payment_id: Option::None,
+            stage: LogStage::Unknown.to_string(),
+            log_type: LogType::Fn,
+            name: LogName::FnRecordHold,
             result: Some(OuterResult::get_code(&result).0),
             http_code: Option::None,
-            out_data: format!("{:?}", result),
-            out_basis: "".into(),
+            data: format!("{:?}", hold_result),
+            basis: "".into(),
         };
-        log_update_db!(log, db_pool, log_id_fn);
+        log_insert_db!(log, db_pool);
+        // log_update_db!(log, db_pool, log_id_fn);
         // /Log in-function
 
         hold_result

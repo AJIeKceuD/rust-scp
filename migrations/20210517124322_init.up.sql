@@ -9,19 +9,17 @@ CREATE SEQUENCE api_request_id_seq
 CREATE TABLE log
 (
     id              bigserial NOT NULL PRIMARY KEY,
+    parent_id       bigint,
     request_id      bigint,
     payment_id      bigint,
     stage           text,
     type            text,
     name            text,
-    microtime_bgn   bigint,
-    microtime_end   bigint,
+    microtime       bigint,
     result          integer,
     http_code       integer,
-    in_data         text,
-    in_basis        text,
-    out_data        text,
-    out_basis       text,
+    data            text,
+    basis           text,
     create_at       timestamp with time zone default current_timestamp,
     update_at       timestamp with time zone default current_timestamp
 );

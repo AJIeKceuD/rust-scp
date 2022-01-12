@@ -77,7 +77,8 @@ pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContex
     // Middlewares...?
 
     // middleware for set global const like request_id, stage, ...
-    request_context.request_id = RequestIdMiddleware::new(&server_context.db_pool).await;
+    let request_id = RequestIdMiddleware::new(&server_context.db_pool).await;
+    request_context.request_id = request_id;
 
     let mut response = Response::new(Body::empty());
     let mut response_result = InnerResult::ErrorUnknown( InnerResultElement {info: InnerResultInfo( String::from( InnerResultInfo::ERROR_UNKNOWN ) ), ..Default::default()} );
@@ -100,17 +101,18 @@ pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContex
     // println!("since_the_epoch {:?}", since_the_epoch);
     // println!("since_the_epoch_in_ms {:?}", since_the_epoch_in_ms);
     let log = LogModel {
+        parent_id: Option::None,
         request_id: Some(request_context.request_id),
         payment_id: Option::None,
         stage: LogStage::Unknown.to_string(),
         log_type: LogType::Http,
         name: LogName::RequestIn,
-        result: Some(-1),
-        http_code: Some(-1),
-        in_data: format!("{:?}", request_context.full_body),
-        in_basis: format!("{:?}", request_context.request_parts),
-        out_data: "".into(),
-        out_basis: "".into(),
+        result: Option::None,
+        http_code: Option::None,
+        data: format!("{:?}", request_context.full_body),
+        basis: format!("{:?}", request_context.request_parts),
+        // out_data: "".into(),
+        // out_basis: "".into(),
     };
     let log_id = log_insert_db!(log, &server_context.db_pool);
     // why not work async() in async func?
@@ -121,6 +123,8 @@ pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContex
     match (&request_context.request_parts.method, request_context.request_parts.uri.path()) {
         (&Method::GET, "/") => {
             // *response.body_mut() = Body::from("Try POSTing data to /echo");
+            let controller = TestAsyncController::new(server_context.clone(), request_context).await?;
+            controller_response = controller.index().await?;
         },
 
         (&Method::GET, "/test") => {
@@ -215,19 +219,19 @@ pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContex
 
     let (response_parts, response_body) = response.into_parts();
     let log = LogModel {
-        request_id: None, // no need. We diff RequestID::None and None. RequestID::None mean we must set Null, None mean change no need.
+        parent_id: Some(log_id),
+        request_id: Some(request_id),
         payment_id: None,
-        stage: LogStage::Unknown.to_string(), // no need
-        log_type: LogType::Http, // no need
-        name: LogName::RequestIn, // no need
-        result: response_result, // ???
+        stage: LogStage::Unknown.to_string(),
+        log_type: LogType::Http,
+        name: LogName::RequestIn,
+        result: response_result,
         http_code: Some(response_parts.status.as_u16().into()),
-        in_data: "".into(), // no need
-        in_basis: "".into(), // no need
-        out_data: format!("{:?}", response_body),
-        out_basis: format!("{:?}", response_parts),
+        data: format!("{:?}", response_body),
+        basis: format!("{:?}", response_parts),
     };
-    log_update_db!(log, &server_context.db_pool, log_id);
+    // log_update_db!(log, &server_context.db_pool, log_id);
+    log_insert_db!(log, &server_context.db_pool);
     let response = Response::from_parts(response_parts, response_body);
 
     println!("{:?}", "Ok");
