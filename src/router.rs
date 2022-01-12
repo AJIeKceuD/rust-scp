@@ -93,13 +93,6 @@ pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContex
     };
 
     // log all request
-    // let since_the_epoch = SystemTime::now()
-    //     .duration_since(UNIX_EPOCH)
-    //     .expect("Time went backwards");
-    // let since_the_epoch_in_ms = since_the_epoch.as_secs() as i64 * 1000 +
-    //     since_the_epoch.subsec_nanos() as i64 / 1_000_000;
-    // println!("since_the_epoch {:?}", since_the_epoch);
-    // println!("since_the_epoch_in_ms {:?}", since_the_epoch_in_ms);
     let log = LogModel {
         parent_id: Option::None,
         request_id: Some(request_context.request_id),
@@ -111,8 +104,6 @@ pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContex
         http_code: Option::None,
         data: format!("{:?}", request_context.full_body),
         basis: format!("{:?}", request_context.request_parts),
-        // out_data: "".into(),
-        // out_basis: "".into(),
     };
     let log_id = log_insert_db!(log, &server_context.db_pool);
     // why not work async() in async func?
@@ -230,7 +221,6 @@ pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContex
         data: format!("{:?}", response_body),
         basis: format!("{:?}", response_parts),
     };
-    // log_update_db!(log, &server_context.db_pool, log_id);
     log_insert_db!(log, &server_context.db_pool);
     let response = Response::from_parts(response_parts, response_body);
 

@@ -105,7 +105,6 @@ impl<'a> RecordRegister<'a> {
 
                     result = InnerResult::ErrorIncomeData(InnerResultElement { info: InnerResultInfo(InnerResultInfo::ERROR_INCOME_DATA.to_string()), detail: Some(format!("{:?}", &e)) });
                     break;
-                    // return Err(std::io::Error::new(ErrorKind::Other, "oh no!"));
                 }
             };
 
@@ -126,34 +125,6 @@ impl<'a> RecordRegister<'a> {
                 }
             }
 
-            // let request_obj: TestAsyncRequest = match serde_json::from_slice(&self.request_context.full_body) {
-            //     Ok(request_obj) => {
-            //         request_obj
-            //     },
-            //     Err(e) => {
-            //         warn!("Request parse error: {:?}", e);
-            //         warn!("Request parse desc: {:?}", self.request_context.full_body);
-            //
-            //         let response_result = InnerResult::ErrorIncomeData( InnerResultElement{info: InnerResultInfo(String::new())} );
-            //         let response_obj = TestAsyncResponse {
-            //             result: response_result,
-            //             // code: response_result.code,
-            //             // info: response_result.info,
-            //             // repeat: response_result.is_repeatable(),
-            //             request_id: *&self.request_context.request_id,
-            //             payment_id: None,
-            //             tmp_str: "".to_string()
-            //         };
-            //         let controller_response = ControllerResponse {
-            //             data: response_obj,
-            //             headers: HashMap::new(),
-            //         };
-            //         return Ok(controller_response);
-            //         // return Err(std::io::Error::new(ErrorKind::Other, "oh no!"));
-            //     }
-            // };
-            // info!("TEST test serde3 {:?}", request_obj);
-
             break;
         }
 
@@ -171,7 +142,6 @@ impl<'a> RecordRegister<'a> {
             basis: "".into(),
         };
         log_insert_db!(log, db_pool);
-        // log_update_db!(log, db_pool, log_id_fn);
         // /Log in-function
 
         Ok(returned)
@@ -197,25 +167,6 @@ impl<'a> RecordRegister<'a> {
         };
         let log_id_fn = log_insert_db!(log, db_pool);
         // /Log in-function
-
-        // let record_id;
-        // sqlx::query!(
-        //     "INSERT INTO record (
-        //         outer_id,
-        //         stage,
-        //         sum,
-        //         tmp
-        //     )
-        //     VALUES ($1, $2, $3)
-        //     RETURNING id;",
-        //
-        //     Option::None::<i64>,
-        //     String::from("hold"),
-        //     hold_data.amount,
-        //
-        //     record_id
-        // )
-        // .fetch_one(db_pool);
 
         let result_temp = query_with_log!(
             db_pool,
@@ -260,71 +211,6 @@ impl<'a> RecordRegister<'a> {
             }
         };
 
-        // let db_query = "
-        // INSERT INTO record (
-        //     outer_id,
-        //     stage,
-        //     sum,
-        //     tmp
-        // )
-        // VALUES ($1, $2, $3)
-        // RETURNING id;
-        // ";
-        // let db_data: (Option<i64>, String, i32) = (
-        //     Option::None::<i64>,
-        //     String::from("hold"),
-        //     hold_data.amount
-        // );
-        //
-        // let log = LogModelIn {
-        //     request_id: Some(request_context.request_id),
-        //     payment_id: Option::None,
-        //     stage: LogStage::Unknown.to_string(),
-        //     log_type: LogType::DB,
-        //     name: LogName::DBRecordHold,
-        //     in_data: format!("{:?}", db_data),
-        //     in_basis: String::from(db_query),
-        // };
-        // let log_id = log_insert_db!(log, db_pool);
-        //
-        // let (db_data_a, db_data_b, db_data_c) = db_data;
-        // let db_request =
-        //     sqlx::query(&db_query)
-        //         .bind(db_data_a)
-        //         .bind(db_data_b)
-        //         .bind(db_data_c)
-        //         .fetch_one(db_pool)
-        //         .await;
-        // debug!("record insert await");
-        //
-        // let mut record_id: i64 = 0;
-        // match &db_request {
-        //     Ok(row) => {
-        //         // debug!("record insert success: {:?}", row);-
-        //         record_id = row.get("id");
-        //     },
-        //     Err(e) => {
-        //         error!("db error while record insert: {:?}", e);
-        //         result = InnerResult::ErrorUnknown(
-        //             InnerResultElement {
-        //                 info: InnerResultInfo(String::from(InnerResultInfo::ERROR_UNKNOWN)),
-        //                 detail: Some(String::from(&*format!("{:?}", e)))
-        //             }
-        //         );
-        //     }
-        // };
-        //
-        // debug!("record insert result: {:?}", record_id);
-        //
-        // let log = LogModelOut {
-        //     payment_id: None,
-        //     result: Option::None,
-        //     http_code: Option::None,
-        //     out_data: format!("ID: {:?}, result {:?}", record_id, result),
-        //     out_basis: "".into(),
-        // };
-        // log_update_db!(log, db_pool, log_id);
-
         // Log in-function
         let log = LogModel {
             parent_id: Some(log_id_fn),
@@ -339,7 +225,6 @@ impl<'a> RecordRegister<'a> {
             basis: "".into(),
         };
         log_insert_db!(log, db_pool);
-        // log_update_db!(log, db_pool, log_id_fn);
         // /Log in-function
 
         hold_result

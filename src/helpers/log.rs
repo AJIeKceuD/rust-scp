@@ -86,80 +86,6 @@ macro_rules! log_insert_db {
     }
 }
 
-/*
-macro_rules! log_update_db {
-    ($log_object:expr, $pool:expr, $log_id:expr) => {
-        {
-        // block_on(
-        //     async {
-                let log_object = $log_object;
-
-                let since_the_epoch = SystemTime::now()
-                    .duration_since(UNIX_EPOCH)
-                    .expect("Time went backwards");
-                let since_the_epoch_in_ms = since_the_epoch.as_secs() as i64 * 1000 +
-                    since_the_epoch.subsec_nanos() as i64 / 1_000_000;
-
-                debug!("log update data: {:?}", log_object);
-
-                let log_request = sqlx::query!(
-                "UPDATE log SET (
-                    -- request_id,
-                    payment_id,
-                    -- stage,
-                    -- type,
-                    -- name,
-                    -- microtime_bgn,
-                    microtime_end,
-                    result,
-                    http_code,
-                    -- data,
-                    -- basis,
-                    out_data,
-                    out_basis,
-                    update_at
-                )
-                = ($1, $2, $3, $4, $5, $6, now())
-                WHERE id = $7
-                RETURNING id",
-                // log_object.request_id,
-                log_object.payment_id,
-                // log_object.stage,
-                // log_object.log_type.to_string(),
-                // log_object.name.to_string(),
-                // log_object.microtime_bgn,
-                since_the_epoch_in_ms,
-                log_object.result,
-                log_object.http_code,
-                // log_object.data,
-                // log_object.basis,
-                log_object.out_data,
-                log_object.out_basis,
-
-                $log_id
-                )
-                .fetch_one($pool);
-                debug!("log update await");
-
-                let log_id = match log_request.await {
-                    Ok(log_row) => {
-                        debug!("log update success: {:?}", log_row);
-                        log_row.id
-                    },
-                    Err(e) => {
-                        error!("db error while log update: {:?}", e);
-                        0
-                    }
-                };
-
-                debug!("log update result: {:?}", log_id);
-            // }
-        // )
-        }
-    }
-}
- */
-
 macro_rules! query_with_log {
     ($pool:expr, $request_context:expr, $sql:expr, $($opt:expr),*) => {
         {
@@ -235,16 +161,6 @@ macro_rules! query_with_log {
                 basis: String::from(""),
             };
             log_insert_db!(log, $pool);
-
-            // Update log
-            // let log = LogModelOut {
-            //     payment_id: Option::None,
-            //     result: Some(OuterResult::get_code(&result).0),
-            //     http_code: Option::None,
-            //     out_data: format!("{:?}", result),
-            //     out_basis: "".into(),
-            // };
-            // log_update_db!(log, $pool, log_id_fn);
 
             db_request
         }
