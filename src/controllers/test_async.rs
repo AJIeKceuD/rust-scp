@@ -69,7 +69,7 @@ impl <'a> TestAsyncController<'a> {
         //
         // let full_body = hyper::body::to_bytes(req_body).await?;
 
-        Ok(TestAsyncController {
+        Ok(Self {
             tmp_str: String::from("fd435"),
             request_context: request_context,
             server_context: server_context,
