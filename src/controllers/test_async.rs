@@ -54,22 +54,22 @@ pub struct TestAsyncResponse {
     pub tmp_str: String,
 }
 
-pub struct TestAsyncController {
+pub struct TestAsyncController<'a> {
     pub tmp_str: String,
     pub server_context: Arc<ServerContext>,
-    pub request_context: RequestContext,
+    pub request_context: &'a RequestContext,
 }
 
-impl TestAsyncController {
+impl <'a> TestAsyncController<'a> {
     // Is it possible use new() from derive directly?
-    pub async fn new(server_context: Arc<ServerContext>, request_context: RequestContext) -> Result<Self, std::io::Error> {
+    pub async fn new(server_context: Arc<ServerContext>, request_context: &'a RequestContext) -> Result<TestAsyncController<'a>, std::io::Error> {
         // TestController::new(); // fall in recursion and panic
         // &self.new_init();
         // let (req_parts, req_body) = request.into_parts();
         //
         // let full_body = hyper::body::to_bytes(req_body).await?;
 
-        Ok(Self {
+        Ok(TestAsyncController {
             tmp_str: String::from("fd435"),
             request_context: request_context,
             server_context: server_context,

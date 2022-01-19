@@ -114,7 +114,7 @@ pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContex
     match (&request_context.request_parts.method, request_context.request_parts.uri.path()) {
         (&Method::GET, "/") => {
             // *response.body_mut() = Body::from("Try POSTing data to /echo");
-            let controller = TestAsyncController::new(server_context.clone(), request_context).await?;
+            let controller = TestAsyncController::new(server_context.clone(), &request_context).await?;
             controller_response = controller.index().await?;
         },
 
@@ -127,17 +127,17 @@ pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContex
             //     request: req,
             //     server_context: server_context,
             // };
-            let controller = TestAsyncController::new(server_context.clone(), request_context).await?;
+            let controller = TestAsyncController::new(server_context.clone(), &request_context).await?;
             controller_response = controller.index().await?;
         },
 
         (&Method::GET, "/rabbit") => {
-            // let controller = RabbitController::new(server_context.clone(), request_context).await?;
+            // let controller = RabbitController::new(server_context.clone(), &request_context).await?;
             // response = controller.index().await?;
         },
 
         (&Method::GET, "/rabbit/add") => {
-            // let controller = RabbitController::new(server_context.clone(), request_context).await?;
+            // let controller = RabbitController::new(server_context.clone(), &request_context).await?;
             // response = controller.add().await?;
         },
 
@@ -147,11 +147,11 @@ pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContex
         (&Method::GET, "/echo") => {
             let ten_millis = time::Duration::from_millis(20000);
             thread::sleep(ten_millis);
-            let controller = TestAsyncController::new(server_context.clone(), request_context).await?;
+            let controller = TestAsyncController::new(server_context.clone(), &request_context).await?;
             let controller_response = controller.index().await?;
         },
         (&Method::POST, "/echo") => {
-            let controller = TestAsyncController::new(server_context.clone(), request_context).await?;
+            let controller = TestAsyncController::new(server_context.clone(), &request_context).await?;
             let controller_response = controller.index().await?;
         },
 
