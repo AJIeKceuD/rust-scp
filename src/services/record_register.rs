@@ -80,16 +80,17 @@ impl<'a> RecordRegister<'a> {
 
         // Log in-function
         let log = LogModel {
+            id: Option::None,
             parent_id: Option::None,
             request_id: Some(request_context.request_id),
             payment_id: Option::None,
-            stage: LogStage::Unknown.to_string(),
+            stage: Some(LogStage::Unknown.to_string()),
             log_type: LogType::Fn,
             name: LogName::FnRecordRegister,
             result: Option::None,
             http_code: Option::None,
-            data: format!("{:?}", (request_context)),
-            basis: String::from(""),
+            data: Some(format!("{:?}", (request_context))),
+            basis: Option::None,
         };
         let log_id_fn = log_insert_db!(log, db_pool);
         // /Log in-function
@@ -130,16 +131,17 @@ impl<'a> RecordRegister<'a> {
 
         // Log in-function
         let log = LogModel {
+            id: Option::None,
             parent_id: Some(log_id_fn),
             request_id: Some(request_context.request_id),
             payment_id: Option::None,
-            stage: LogStage::Unknown.to_string(),
+            stage: Some(LogStage::Unknown.to_string()),
             log_type: LogType::Fn,
             name: LogName::FnRecordRegister,
             result: Some(OuterResult::get_code(&result).0),
             http_code: Option::None,
-            data: format!("{:?}", returned),
-            basis: "".into(),
+            data: Some(format!("{:?}", returned)),
+            basis: Option::None,
         };
         log_insert_db!(log, db_pool);
         // /Log in-function
@@ -154,16 +156,17 @@ impl<'a> RecordRegister<'a> {
 
         // Log in-function
         let log = LogModel {
+            id: Option::None,
             parent_id: Option::None,
             request_id: Some(request_context.request_id),
             payment_id: Option::None,
-            stage: LogStage::Unknown.to_string(),
+            stage: Some(LogStage::Unknown.to_string()),
             log_type: LogType::Fn,
             name: LogName::FnRecordHold,
             result: Option::None,
             http_code: Option::None,
-            data: format!("{:?}", (hold_data)),
-            basis: String::from(""),
+            data: Some(format!("{:?}", (hold_data))),
+            basis: Option::None,
         };
         let log_id_fn = log_insert_db!(log, db_pool);
         // /Log in-function
@@ -195,7 +198,7 @@ impl<'a> RecordRegister<'a> {
                     }
                 );
                 OutcomeDataHold {
-                    id: Some(row.id),
+                    id: Some(row[0].id),
                 }
             },
             Err(e) => {
@@ -213,16 +216,17 @@ impl<'a> RecordRegister<'a> {
 
         // Log in-function
         let log = LogModel {
+            id: Option::None,
             parent_id: Some(log_id_fn),
             request_id: Some(request_context.request_id),
             payment_id: Option::None,
-            stage: LogStage::Unknown.to_string(),
+            stage: Some(LogStage::Unknown.to_string()),
             log_type: LogType::Fn,
             name: LogName::FnRecordHold,
             result: Some(OuterResult::get_code(&result).0),
             http_code: Option::None,
-            data: format!("{:?}", hold_result),
-            basis: "".into(),
+            data: Some(format!("{:?}", hold_result)),
+            basis: Option::None,
         };
         log_insert_db!(log, db_pool);
         // /Log in-function

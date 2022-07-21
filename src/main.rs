@@ -116,7 +116,7 @@ fn logger_init() {
     use log::{LevelFilter};
 
     match log::set_logger(&simple_logger::SimpleLogger)
-        .map(|()| log::set_max_level(LevelFilter::Debug))
+        .map(|()| log::set_max_level(LevelFilter::Info))
     {
         Ok(_) => {
             error!("Logger init error!");

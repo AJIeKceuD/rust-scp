@@ -9,8 +9,8 @@ macro_rules! log_insert_db {
                     .expect("Time went backwards");
                 let since_the_epoch_in_ms = since_the_epoch.as_secs() as i64 * 1000 +
                     since_the_epoch.subsec_nanos() as i64 / 1_000_000;
-                println!("since_the_epoch {:?}", since_the_epoch);
-                println!("since_the_epoch_in_ms {:?}", since_the_epoch_in_ms);
+                // println!("since_the_epoch {:?}", since_the_epoch);
+                // println!("since_the_epoch_in_ms {:?}", since_the_epoch_in_ms);
 
                 let log_object = $log_object;
 
@@ -96,16 +96,17 @@ macro_rules! query_with_log {
                 data.push_str(", ");
             )*
             let log = LogModel {
+                id: Option::None,
                 parent_id: Option::None,
                 request_id: Some($request_context.request_id),
                 payment_id: Option::None,
-                stage: LogStage::Unknown.to_string(),
+                stage: Some(LogStage::Unknown.to_string()),
                 log_type: LogType::DB,
                 name: LogName::Unknown,
                 result: Option::None,
                 http_code: Option::None,
-                data: data,
-                basis: String::from($sql),
+                data: Some(data),
+                basis: Some(String::from($sql)),
             };
             let log_id_fn = log_insert_db!(log, $pool);
 
@@ -118,16 +119,16 @@ macro_rules! query_with_log {
                     $opt,
                 )*
             )
-            .fetch_one($pool)
+            .fetch_all($pool)
             .await;
 
             match &db_request {
-                Ok(row) => {
+                Ok(rows) => {
                     // debug!("record insert success: {:?}", row);
                     result = InnerResult::Ok(
                         InnerResultElement {
                             info: InnerResultInfo( String::from( InnerResultInfo::OK ) ),
-                            detail: Some(String::from(&*format!("{:?}", row)))
+                            detail: Some(String::from(&*format!("{:?}", rows)))
                          }
                      );
                 },
@@ -149,16 +150,17 @@ macro_rules! query_with_log {
                 data.push_str(", ");
             )*
             let log = LogModel {
+                id: Option::None,
                 parent_id: Some(log_id_fn),
                 request_id: Some($request_context.request_id),
                 payment_id: Option::None,
-                stage: LogStage::Unknown.to_string(),
+                stage: Some(LogStage::Unknown.to_string()),
                 log_type: LogType::DB,
                 name: LogName::Unknown,
                 result: Some(OuterResult::get_code(&result).0),
                 http_code: Option::None,
-                data: format!("{:?}", result),
-                basis: String::from(""),
+                data: Some(format!("{:?}", result)),
+                basis: Option::None,
             };
             log_insert_db!(log, $pool);
 

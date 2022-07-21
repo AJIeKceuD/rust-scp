@@ -39,15 +39,16 @@ pub enum LogName {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct LogModel {
+    pub id: Option<i64>,
     pub parent_id: Option<i64>,
     pub request_id: Option<RequestId>,
     pub payment_id: Option<i64>,
-    pub stage: String,
+    pub stage: Option<String>,
     pub log_type: LogType,
     pub name: LogName,
     // pub microtime: i64,
     pub result: Option<i32>,
     pub http_code: Option<i32>,
-    pub data: String,
-    pub basis: String,
+    pub data: Option<String>,
+    pub basis: Option<String>,
 }

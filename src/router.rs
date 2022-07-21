@@ -13,6 +13,7 @@ use log::{error, warn, info, debug, trace};
 use crate::ServerContext;
 // use test_controller::TestController;
 use crate::controllers::test_async::TestAsyncController;
+use crate::controllers::admin::logs::LogsController as AdminLogsController;
 
 // use test_controller::TestController;
 use crate::controllers::rabbit::RabbitController;
@@ -91,19 +92,21 @@ pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContex
         headers: HashMap::new(),
         status: Some(StatusCode::OK),
     };
+    let mut controller_response_type = "html"; // todo remake with enum
 
     // log all request
     let log = LogModel {
+        id: Option::None,
         parent_id: Option::None,
         request_id: Some(request_context.request_id),
         payment_id: Option::None,
-        stage: LogStage::Unknown.to_string(),
+        stage: Some(LogStage::Unknown.to_string()),
         log_type: LogType::Http,
         name: LogName::RequestIn,
         result: Option::None,
         http_code: Option::None,
-        data: format!("{:?}", request_context.full_body),
-        basis: format!("{:?}", request_context.request_parts),
+        data: Some(format!("{:?}", request_context.full_body)),
+        basis: Some(format!("{:?}", request_context.request_parts)),
     };
     let log_id = log_insert_db!(log, &server_context.db_pool);
     // why not work async() in async func?
@@ -128,6 +131,12 @@ pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContex
             //     server_context: server_context,
             // };
             let controller = TestAsyncController::new(server_context.clone(), &request_context).await?;
+            controller_response = controller.index().await?;
+            controller_response_type = "json";
+        },
+
+        (&Method::GET, "/admin/logs") => {
+            let controller = AdminLogsController::new(server_context.clone(), &request_context).await?;
             controller_response = controller.index().await?;
         },
 
@@ -200,7 +209,18 @@ pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContex
         },
     };
 
-    response = response_json!(&controller_response);
+    match controller_response_type {
+        "json" => {
+            response = response_json!(&controller_response);
+        }
+        "html" => {
+            response = response_html!(&controller_response);
+        }
+        _ => {
+            response = response_html!(&controller_response);
+        }
+    }
+    // TODO probably use controller_response.code?
     let response_result = match &controller_response.data["code"].as_i64() {
         Some(value) => Some(*value as i32),
         Option::None => None,
@@ -210,16 +230,17 @@ pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContex
 
     let (response_parts, response_body) = response.into_parts();
     let log = LogModel {
+        id: Option::None,
         parent_id: Some(log_id),
         request_id: Some(request_id),
         payment_id: None,
-        stage: LogStage::Unknown.to_string(),
+        stage: Some(LogStage::Unknown.to_string()),
         log_type: LogType::Http,
         name: LogName::RequestIn,
         result: response_result,
         http_code: Some(response_parts.status.as_u16().into()),
-        data: format!("{:?}", response_body),
-        basis: format!("{:?}", response_parts),
+        data: Some(format!("{:?}", response_body)),
+        basis: Some(format!("{:?}", response_parts)),
     };
     log_insert_db!(log, &server_context.db_pool);
     let response = Response::from_parts(response_parts, response_body);

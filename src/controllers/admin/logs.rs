@@ -1,18 +1,17 @@
 use std::sync::Arc;
 use std::collections::HashMap;
+use std::collections::BTreeMap;
+use handlebars::{
+    to_json, Context, Handlebars, Helper, JsonRender, Output, RenderContext, RenderError,
+};
 
 use serde::{Deserialize, Serialize};
 // use serde_json::json;
-use serde_json::{Value, json};
+use serde_json::{Map, Value, json};
 
 #[allow(unused_imports)]
 use log::{error, warn, info, debug, trace};
 
-// use serde_json::Result as serde_result;
-
-// #[path="./../services/logs/db_log_object.rs"]
-// mod db_log_object;
-// use db_log_object::DBLogObject as DBLogObject;
 use crate::ServerContext;
 use crate::model::log::{RequestId};
 use crate::router::{RequestContext, ControllerResponse};
@@ -32,13 +31,8 @@ use crate::services::mapper::{
     },
 };
 
-use crate::services::record_register::RecordRegister;
-
-// use web_controller::WebController;
-// use web_controller_derive::WebController;
-
-// #[path="../helpers.rs"]
-// mod helpers; // why not work? How make it work? Or use like this is bad idea?
+use crate::services::logs::handler::LogsHandler;
+use crate::services::logs::handler::LogsList;
 
 //curl -v -X GET -d '{"type": "hold", "v": "0", "amount": "10000", "client_id": "5", "paym_id": "6564565465464565646", "msisdn": "79267271941", "limit_type": "base"}' http://127.0.0.1:7878/test
 //curl -v -X GET -d '{"type": "hold"}' http://127.0.0.1:7878/test
@@ -54,21 +48,14 @@ pub struct LogsResponse {
     pub tmp_str: String,
 }
 
-pub struct TestAsyncController {
+pub struct LogsController<'a> {
     pub tmp_str: String,
     pub server_context: Arc<ServerContext>,
-    pub request_context: RequestContext,
+    pub request_context: &'a RequestContext,
 }
 
-impl TestAsyncController {
-    // Is it possible use new() from derive directly?
-    pub async fn new(server_context: Arc<ServerContext>, request_context: RequestContext) -> Result<Self, std::io::Error> {
-        // TestController::new(); // fall in recursion and panic
-        // &self.new_init();
-        // let (req_parts, req_body) = request.into_parts();
-        //
-        // let full_body = hyper::body::to_bytes(req_body).await?;
-
+impl <'a> LogsController<'a> {
+    pub async fn new(server_context: Arc<ServerContext>, request_context: &'a RequestContext) -> Result<LogsController<'a>, std::io::Error> {
         Ok(Self {
             tmp_str: String::from("fd435"),
             request_context: request_context,
@@ -78,12 +65,15 @@ impl TestAsyncController {
 
     pub(crate) async fn index(&self) -> Result<ControllerResponse, std::io::Error> {
         // let req = &self.request;
-        info!("TEST req_h {:?}", &self.request_context.request_parts);
-        info!("TEST full_body {:?}", &self.request_context.full_body);
+        debug!("TEST req_h {:?}", &self.request_context.request_parts);
+        debug!("TEST full_body {:?}", &self.request_context.full_body);
         let server_context = &self.server_context;
         let response_result;// = InnerResult::Ok( InnerResultElement{info: InnerResultInfo(String::new()), ..Default::default()} );
         let request_body_value: Value;// = Value::Null;
-        let response_obj ;
+        let response_obj;
+        let mut logs_list: LogsList = LogsList{
+            logs: Option::None
+        };
 
         loop {
             request_body_value = match serde_json::from_slice(&self.request_context.full_body) {
@@ -94,9 +84,14 @@ impl TestAsyncController {
                     warn!("Request parse error: {:?}", e);
                     warn!("Request parse desc: {:?}", self.request_context.full_body);
 
-                    response_result = InnerResult::ErrorIncomeData( InnerResultElement{info: InnerResultInfo ( String::from(InnerResultInfo::ERROR_INCOME_DATA_BAD_JSON) ), ..Default::default()} );
+                    response_result = InnerResult::ErrorIncomeData(
+                        InnerResultElement {
+                            info: InnerResultInfo( String::from( InnerResultInfo::ERROR_INCOME_DATA_BAD_JSON) ),
+                            ..Default::default()
+                        }
+                    );
 
-                    response_obj = TestAsyncResponse {
+                    response_obj = LogsResponse {
                         code: OuterResult::get_code(&response_result),
                         info: OuterResult::get_info(&response_result),
                         repeat: OuterResult::is_repeatable(&response_result),
@@ -111,24 +106,25 @@ impl TestAsyncController {
             };
 
             // let payment_register = PaymentRegister { request_context: *&self.request_context, server_context: *&self.server_context.clone() };
-            let record_register = RecordRegister::new(server_context.clone(), &self.request_context ).await?;
-            match request_body_value["v"].as_i64() { // TODO remove unwrap? or...
+            let logs_handler = LogsHandler::new(server_context.clone(), &self.request_context ).await?;
+            match request_body_value["v"].as_i64() {
                 Some(0) => {
-                    let process_result = record_register.process_v0().await?;
+                    logs_list = logs_handler.list().await?;
+                    info!("{:?}", logs_list);
 
                     response_result = InnerResult::Ok(
                         InnerResultElement{
                             info: InnerResultInfo(String::from( InnerResultInfo::OK )),
-                            detail: Some(format!("{:?}", process_result)),
+                            detail: Some(format!("{:?}", logs_list)),
                         }
                     );
 
-                    response_obj = TestAsyncResponse {
+                    response_obj = LogsResponse {
                         code: OuterResult::get_code(&response_result),
                         info: OuterResult::get_info(&response_result),
                         repeat: OuterResult::is_repeatable(&response_result),
                         request_id: *&self.request_context.request_id,
-                        record_id: process_result.id,
+                        record_id: Some(0),
                         tmp_str: "".to_string()
                     };
                 },
@@ -140,7 +136,7 @@ impl TestAsyncController {
                         }
                     );
 
-                    response_obj = TestAsyncResponse {
+                    response_obj = LogsResponse {
                         code: OuterResult::get_code(&response_result),
                         info: OuterResult::get_info(&response_result),
                         repeat: OuterResult::is_repeatable(&response_result),
@@ -154,80 +150,50 @@ impl TestAsyncController {
             break;
         }
 
-        // let request_value: Value = match serde_json::from_slice(&self.request_context.full_body) {
-        //     Ok(request_obj) => {
-        //         request_obj
-        //     },
-        //     Err(e) => {
-        //         warn!("Request parse error: {:?}", e);
-        //         warn!("Request parse desc: {:?}", self.request_context.full_body);
-        //
-        //         let response_result = InnerResult::ErrorIncomeDataParse( InnerResultElement{info: InnerResultInfo(String::new())} );
-        //         let response_obj = TestAsyncResponse {
-        //             result: response_result,
-        //             // code: response_result.code,
-        //             // info: response_result.info,
-        //             // repeat: response_result.is_repeatable(),
-        //             request_id: *&self.request_context.request_id,
-        //             payment_id: None,
-        //             tmp_str: "".to_string()
-        //         };
-        //         let controller_response = ControllerResponse {
-        //             data: response_obj,
-        //             headers: HashMap::new(),
-        //         };
-        //         return Ok(controller_response);
-        //         // return Err(std::io::Error::new(ErrorKind::Other, "oh no!"));
-        //     }
-        // };
+        // let response_obj = json!(response_obj);
+        // create the handlebars registry
+        let mut handlebars = Handlebars::new();
 
-        // let request_obj: TestAsyncRequest = match serde_json::from_slice(&self.request_context.full_body) {
-        //     Ok(request_obj) => {
-        //         request_obj
-        //     },
-        //     Err(e) => {
-        //         warn!("Request parse error: {:?}", e);
-        //         warn!("Request parse desc: {:?}", self.request_context.full_body);
-        //
-        //         let response_result = InnerResult::ErrorIncomeData( InnerResultElement{info: InnerResultInfo(String::new())} );
-        //         let response_obj = TestAsyncResponse {
-        //             result: response_result,
-        //             // code: response_result.code,
-        //             // info: response_result.info,
-        //             // repeat: response_result.is_repeatable(),
-        //             request_id: *&self.request_context.request_id,
-        //             payment_id: None,
-        //             tmp_str: "".to_string()
-        //         };
-        //         let controller_response = ControllerResponse {
-        //             data: response_obj,
-        //             headers: HashMap::new(),
-        //         };
-        //         return Ok(controller_response);
-        //         // return Err(std::io::Error::new(ErrorKind::Other, "oh no!"));
-        //     }
-        // };
-        // info!("TEST test serde3 {:?}", request_obj);
+        // register template from a file and assign a name to it
+        // TODO normal match
 
-        // let mut response = Response::new(Body::empty());
-        //
-        // *response.body_mut() = String::from("asds3432432d").into();
-        // *response
-        //     .header("Foo", "Bar")
-        //     .status(StatusCode::NOT_FOUND);
+        match handlebars.register_template_file("table", "./src/views/admin/logs.hbs") {
+            // () => {
+            //     ()
+            // },
+            _ => {
 
-        let response_obj = json!(response_obj);
+            }
+        }
+
+        // register some custom helpers
+        // handlebars.register_helper("format", Box::new(format_helper));
+        // handlebars.register_helper("ranking_label", Box::new(rank_helper));
+
+        // make data and render it
+        let mut data = Map::new();
+        data.insert("records".to_string(), to_json(&logs_list.logs));
+        let response_obj = match handlebars.render("table", &data) {
+            Ok(value) =>  {
+                value
+            },
+            Err(e) => {
+                e.to_string()
+            }
+        };
+        println!("{}", "response_obj");
+        println!("{}", response_obj);
+        // /create the handlebars
+
         let controller_response = ControllerResponse {
-            data: response_obj,
+            data: json!(response_obj),
             headers: HashMap::new(),
             status: Option::None,
         };
         // let response = response_json!(&response_obj);
-        // info!("TEST response {:?}", response);
-        info!("TEST controller_response {:?}", controller_response);
+        // debug!("TEST response {:?}", response);
+        debug!("TEST controller_response {:?}", controller_response);
 
         Ok(controller_response)
     }
-
-    // pub
 }
