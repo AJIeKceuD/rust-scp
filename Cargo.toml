@@ -12,7 +12,7 @@ hyper = { version = "0.14", features = ["full"] }
 tokio = { version = "1", features = ["full"] }
 futures = "0.3"
 log = { version = "0.4.14", features = ["std"] }
-sqlx = { version = "0.5.1", features = ["postgres", "runtime-tokio-rustls", "chrono"] }
+sqlx = { version = "0.5.1", features = ["postgres", "runtime-tokio-rustls", "chrono", "offline"] }
 tokio-postgres = "0.7.0"
 handlebars = "4.3.0"
 serde = "1.0.125"
