@@ -1,9 +1,5 @@
 use std::sync::Arc;
 use std::collections::HashMap;
-// use std::collections::BTreeMap;
-// use handlebars::{
-//     to_json, Context, Handlebars, Helper, JsonRender, Output, RenderContext, RenderError,
-// };
 
 use tera::{Context, Result as TeraResult, Tera};
 use crate::TEMPLATES;
@@ -78,114 +74,8 @@ impl <'a> LogsController<'a> {
             logs: Option::None
         };
 
-        loop {
-            // request_body_value = match serde_json::from_slice(&self.request_context.full_body) {
-            //     Ok(request_obj) => {
-            //         request_obj
-            //     },
-            //     Err(e) => {
-            //         warn!("Request parse error: {:?}", e);
-            //         warn!("Request parse desc: {:?}", self.request_context.full_body);
-
-            //         response_result = InnerResult::ErrorIncomeData(
-            //             InnerResultElement {
-            //                 info: InnerResultInfo( String::from( InnerResultInfo::ERROR_INCOME_DATA_BAD_JSON) ),
-            //                 ..Default::default()
-            //             }
-            //         );
-
-            //         response_obj = LogsResponse {
-            //             code: OuterResult::get_code(&response_result),
-            //             info: OuterResult::get_info(&response_result),
-            //             repeat: OuterResult::is_repeatable(&response_result),
-            //             request_id: *&self.request_context.request_id,
-            //             record_id: None,
-            //             tmp_str: "".to_string()
-            //         };
-            //         break;
-            //     }
-            // };
-
-            let logs_handler = LogsHandler::new(server_context.clone(), &self.request_context ).await?;
-            // match request_body_value["v"].as_i64() {
-            //     Some(0) => {
-                    logs_list = logs_handler.list().await?;
-                    // info!("{:?}", logs_list);
-
-                    // response_result = InnerResult::Ok(
-                    //     InnerResultElement{
-                    //         info: InnerResultInfo(String::from( InnerResultInfo::OK )),
-                    //         detail: Some(format!("{:?}", logs_list)),
-                    //     }
-                    // );
-
-                    // response_obj = LogsResponse {
-                    //     code: OuterResult::get_code(&response_result),
-                    //     info: OuterResult::get_info(&response_result),
-                    //     repeat: OuterResult::is_repeatable(&response_result),
-                    //     request_id: *&self.request_context.request_id,
-                    //     record_id: Some(0),
-                    //     tmp_str: "".to_string()
-                    // };
-            //     },
-            //     _ => {
-            //         response_result = InnerResult::ErrorIncomeData(
-            //             InnerResultElement{
-            //                 info: InnerResultInfo ( String::from(InnerResultInfo::ERROR_INCOME_DATA_BAD_VERSION)),
-            //                 detail: Some(String::from("Value: ") + request_body_value["v"].to_string().as_str())
-            //             }
-            //         );
-
-            //         response_obj = LogsResponse {
-            //             code: OuterResult::get_code(&response_result),
-            //             info: OuterResult::get_info(&response_result),
-            //             repeat: OuterResult::is_repeatable(&response_result),
-            //             request_id: *&self.request_context.request_id,
-            //             record_id: None,
-            //             tmp_str: "".to_string()
-            //         };
-            //     },
-            // };
-
-            break;
-        }
-
-        /*
-        // let response_obj = json!(response_obj);
-        // create the handlebars registry
-        let mut handlebars = Handlebars::new();
-
-        // register template from a file and assign a name to it
-        // TODO normal match
-
-        match handlebars.register_template_file("table", "./src/views/admin/logs.hbs") {
-            // () => {
-            //     ()
-            // },
-            _ => {
-
-            }
-        }
-
-        // register some custom helpers
-        handlebars.register_helper("format", Box::new(format_helper));
-        // handlebars.register_helper("ranking_label", Box::new(rank_helper));
-
-        // make data and render it
-        let mut handlebars_data = Map::new();
-        handlebars_data.insert("records".to_string(), to_json(&logs_list.logs));
-        let response_obj = match handlebars.render("table", &handlebars_data) {
-            Ok(value) =>  {
-                value
-            },
-            Err(e) => {
-                e.to_string()
-            }
-        };
-        println!("{}", "response_obj");
-        println!("{}", response_obj);
-        // /create the handlebars
-        */
+        let logs_handler = LogsHandler::new(server_context.clone(), &self.request_context ).await?;
+        logs_list = logs_handler.list().await?;
 
         let mut context = Context::new();
         context.insert("username", &"Bob");
