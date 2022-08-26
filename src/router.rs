@@ -100,7 +100,7 @@ pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContex
         parent_id: Option::None,
         request_id: Some(request_context.request_id),
         payment_id: Option::None,
-        stage: Some(LogStage::Unknown.to_string()),
+        stage: LogStage::Unknown,
         log_type: LogType::Http,
         name: LogName::RequestIn,
         result: Option::None,
@@ -208,6 +208,7 @@ pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContex
             // *response.status_mut() = StatusCode::NOT_FOUND;
         },
     };
+    info!("TEST controller_response {:?}", controller_response);
 
     match controller_response_type {
         "json" => {
@@ -234,7 +235,7 @@ pub async fn router_handler(req: Request<Body>, server_context: Arc<ServerContex
         parent_id: Some(log_id),
         request_id: Some(request_id),
         payment_id: None,
-        stage: Some(LogStage::Unknown.to_string()),
+        stage: LogStage::Unknown,
         log_type: LogType::Http,
         name: LogName::RequestIn,
         result: response_result,

@@ -7,3 +7,6 @@ SQLx;
 $ sqlx migrate add -r <name>
 - Apply migrations:
 $ sqlx migrate run
+
+- Regenerate offline data
+$ 

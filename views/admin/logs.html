@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<HTML>
+  <head>
+    <meta charset="utf-8">
+    <title>Моя тестовая страница</title>
+    <style>
+      .log_outer_block {
+        background-color: bisque;
+        padding: 10px; 
+      }
+      .log_request {
+        background-color: blueviolet;
+        margin: 5px; 
+        clear: both;
+      }
+      .log_line {
+        background-color: brown;
+        margin: 1%;
+        width: 48%; 
+      }
+      .log_line_left {
+        position: relative;
+        float: left;
+      }
+      .log_line_right {
+        position: relative;
+        float: right;
+      }
+      
+      .log_line_id {
+         
+      }
+      .log_line_request_id {
+         
+      }
+      .log_line_payment_id {
+         
+      }
+    </style>
+  </head>
+  <body>
+    HTMLHTMLHTML
+
+    <div class="log_outer_block">
+    {% for record in records %}
+      {% if loop.first %}
+        <div class="log_request">
+        {% set_global last_request_id = record.request_id %}
+      {% endif %}
+
+      {% if last_request_id != record.request_id %}
+        </div>
+        <div class="log_request">
+        {% set_global last_request_id = record.request_id %}
+      {% endif %}
+
+      <div>
+        <div class="log_line log_line_left">
+          <div class="log_line_id">ID: {{ record.id }}</div>
+          <div class="log_line_request_id">Request ID: {{ record.request_id }}</div>
+          <div class="log_line_payment_id">Payment ID: {{ record.payment_id }}</div>
+          <div class="log_line_stage">Stage: {{ record.stage }}</div>
+          <div class="log_line_log_type">Type: {{ record.log_type }}</div>
+          <div class="log_line_name">Name: {{ record.name }}</div>
+          <div class="log_line_result">Result: {{ record.result }}</div>
+          <div class="log_line_http_code">Http code: {{ record.http_code }}</div>
+          <div class="log_line_data">Data: {{ record.data }}</div>
+          <div class="log_line_basis">Basis: {{ record.basis }}</div>
+          <div class="log_line_create_at">Create at: {{ record.create_at }}</div>
+          <div class="log_line_update_at">Update at: {{ record.update_at }}</div>
+        </div>
+
+        <div class="log_line log_line_right">
+          <div class="log_line_id">{{ record.right_id }}</div>
+          <div class="log_line_request_id">{{ record.right_request_id }}</div>
+          <div class="log_line_payment_id">{{ record.right_payment_id }}</div>
+          <div class="log_line_stage">{{ record.right_stage }}</div>
+          <div class="log_line_log_type">{{ record.right_log_type }}</div>
+          <div class="log_line_name">{{ record.right_name }}</div>
+          <div class="log_line_result">{{ record.right_result }}</div>
+          <div class="log_line_http_code">{{ record.right_http_code }}</div>
+          <div class="log_line_data">{{ record.right_data }}</div>
+          <div class="log_line_basis">{{ record.right_basis }}</div>
+          <div class="log_line_create_at">{{ record.right_create_at }}</div>
+          <div class="log_line_update_at">{{ record.right_update_at }}</div>
+        </div>
+        <div style="clear: both;"></div>
+      </div>
+
+      {% if loop.last %}
+        </div>
+      {% endif %}
+    {% endfor %}
+    </div>
+  </body>
+</HTML>

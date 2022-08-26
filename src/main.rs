@@ -26,6 +26,39 @@ pub(crate) mod model;
 pub(crate) mod services;
 use services::logs::simple_logger;
 
+#[macro_use]
+extern crate tera;
+#[macro_use]
+extern crate lazy_static;
+extern crate serde_json;
+
+use serde_json::value::{to_value, Value};
+// use std::error::Error;
+use tera::{Result as TeraResult, Tera};
+
+use std::collections::HashMap;
+
+lazy_static! {
+    pub static ref TEMPLATES: Tera = {
+        let mut tera = match Tera::new("views/**/*") {
+            Ok(t) => t,
+            Err(e) => {
+                println!("Parsing error(s): {}", e);
+                // ::std::process::exit(1);
+                panic!("this is a terrible mistake!");
+                // @todo verification check all templates. Probably init it earlier (dont know how) and return exit()?
+            }
+        };
+        tera.autoescape_on(vec!["html", ".sql"]);
+        tera.register_filter("do_nothing", do_nothing_filter);
+        tera
+    };
+}
+
+pub fn do_nothing_filter(value: &Value, _: &HashMap<String, Value>) -> TeraResult<Value> {
+    let s = try_get_value!("do_nothing_filter", "value", String, value);
+    Ok(to_value(&s).unwrap())
+}
 
 async fn shutdown_signal() {
     // Wait for the CTRL+C signal

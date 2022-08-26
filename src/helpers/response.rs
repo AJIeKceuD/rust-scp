@@ -27,6 +27,7 @@ macro_rules! response_html {
             let response_headers = &$response_obj.headers;
             let response_status = &$response_obj.status.unwrap_or(StatusCode::OK);
 
+            println!("-------------------------{response_data}");
             println!("{}", response_data);
 
             Response::builder()
